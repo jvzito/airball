@@ -1,0 +1,2347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airball · NBA Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & TOKENS ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;height:100%}
+:root{
+  --bg:#07090F;
+  --s1:#0D1018;
+  --s2:#131720;
+  --s3:#1A1F2C;
+  --border:rgba(255,255,255,0.06);
+  --b2:rgba(255,255,255,0.10);
+  --acc:#FF6B35;
+  --acc2:#FFB347;
+  --blue:#4A90D9;
+  --green:#3ECF8E;
+  --red:#E05252;
+  --text:#E8ECF4;
+  --sub:#8892AA;
+  --muted:#3D4560;
+  --fd:'Bebas Neue',sans-serif;
+  --fb:'Inter',sans-serif;
+  --fm:'JetBrains Mono',monospace;
+  --r:12px;
+  --sidebar:240px;
+}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--fb);min-height:100%;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ── VIEWS ── */
+.view{display:none;min-height:100vh}
+.view.active{display:flex;flex-direction:column}
+
+/* ════════════════════════════════
+   LANDING
+════════════════════════════════ */
+#view-landing{
+  align-items:center;justify-content:center;
+  padding:0 24px 60px;
+  background:radial-gradient(ellipse 100% 55% at 50% -5%,rgba(255,107,53,.09) 0%,transparent 65%);
+  position:relative;overflow:hidden;
+}
+.land-grid{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 30%,transparent 100%);
+}
+.land-inner{
+  max-width:880px;width:100%;
+  display:flex;flex-direction:column;align-items:center;
+  position:relative;z-index:1;
+}
+.land-nav{
+  width:100%;display:flex;align-items:center;
+  justify-content:space-between;
+  padding:28px 0 72px;
+}
+.land-logo{font-family:var(--fd);font-size:24px;letter-spacing:4px}
+.land-logo span{color:var(--acc)}
+.nav-group{display:flex;gap:8px;align-items:center}
+
+/* buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:9px 20px;border-radius:9px;
+  font-family:var(--fb);font-weight:500;font-size:13.5px;
+  cursor:pointer;transition:all .18s;border:none;outline:none;
+  text-decoration:none;
+}
+.btn-ghost{background:transparent;color:var(--sub);border:none;padding:9px 14px}
+.btn-ghost:hover{color:var(--text)}
+.btn-outline{background:transparent;border:1px solid var(--b2);color:var(--sub)}
+.btn-outline:hover{border-color:var(--acc);color:var(--acc)}
+.btn-primary{background:var(--acc);color:#fff;font-weight:600}
+.btn-primary:hover{background:#ff7c4a;box-shadow:0 4px 20px rgba(255,107,53,.4);transform:translateY(-1px)}
+.btn-sm{padding:7px 16px;font-size:12.5px;border-radius:8px}
+
+.hero-chip{
+  font-family:var(--fm);font-size:10.5px;color:var(--acc);
+  background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.18);
+  padding:5px 14px;border-radius:99px;margin-bottom:26px;
+  letter-spacing:2px;animation:up .5s ease both;
+}
+.hero-title{
+  font-family:var(--fd);
+  font-size:clamp(58px,8.5vw,110px);
+  line-height:.92;text-align:center;letter-spacing:2px;
+  animation:up .5s .07s ease both;margin-bottom:8px;
+}
+.hero-title em{color:var(--acc);font-style:normal}
+.hero-desc{
+  font-size:16px;color:var(--sub);text-align:center;
+  max-width:430px;line-height:1.7;
+  animation:up .5s .14s ease both;margin-bottom:36px;
+}
+.hero-actions{
+  display:flex;gap:10px;align-items:center;
+  animation:up .5s .21s ease both;margin-bottom:64px;
+}
+@keyframes up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* preview card */
+.preview-card{
+  width:100%;max-width:640px;
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;
+  animation:up .6s .28s ease both;position:relative;
+}
+.preview-titlebar{
+  display:flex;align-items:center;gap:8px;
+  padding:11px 16px;border-bottom:1px solid var(--border);
+  background:var(--s2);
+}
+.dot{width:9px;height:9px;border-radius:50%}
+.preview-label{
+  margin-left:auto;font-family:var(--fm);
+  font-size:10px;color:var(--sub);letter-spacing:1.5px;
+}
+
+.features{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:12px;width:100%;margin-top:48px;
+  animation:up .5s .35s ease both;
+}
+.feat{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:var(--r);padding:20px;
+  transition:border-color .2s,transform .18s;
+}
+.feat:hover{border-color:rgba(255,107,53,.25);transform:translateY(-3px)}
+.feat-icon{font-size:22px;margin-bottom:10px}
+.feat-title{font-size:14px;font-weight:600;margin-bottom:5px}
+.feat-desc{font-size:12.5px;color:var(--sub);line-height:1.55}
+
+/* ════════════════════════════════
+   MODAL
+════════════════════════════════ */
+.modal-backdrop{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(14px);
+  z-index:1000;align-items:center;justify-content:center;
+  padding:20px;
+}
+.modal-backdrop.open{display:flex}
+.modal{
+  background:var(--s1);border:1px solid var(--b2);
+  border-radius:18px;padding:36px;
+  width:100%;max-width:400px;
+  position:relative;
+  animation:modalIn .25s cubic-bezier(.16,1,.3,1);
+}
+@keyframes modalIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal-close{
+  position:absolute;top:14px;right:14px;
+  width:30px;height:30px;border-radius:8px;
+  background:var(--s2);border:none;
+  color:var(--sub);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.modal-close:hover{color:var(--text);background:var(--s3)}
+.modal-logo{font-family:var(--fd);font-size:26px;letter-spacing:3px;text-align:center;margin-bottom:6px}
+.modal-logo span{color:var(--acc)}
+.modal-sub{font-size:13px;color:var(--sub);text-align:center;margin-bottom:26px}
+.modal-tabs{
+  display:flex;gap:2px;background:var(--s2);
+  border-radius:10px;padding:3px;margin-bottom:22px;
+}
+.modal-tab{
+  flex:1;padding:8px;border-radius:8px;
+  font-size:13px;font-weight:500;cursor:pointer;
+  text-align:center;transition:all .15s;color:var(--sub);
+}
+.modal-tab.active{background:var(--s3);color:var(--text)}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.field label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--sub)}
+.field input{
+  background:var(--s2);border:1px solid var(--b2);
+  border-radius:9px;color:var(--text);
+  font-family:var(--fb);font-size:14px;
+  padding:11px 14px;outline:none;transition:border-color .15s;
+}
+.field input:focus{border-color:var(--acc)}
+.field input::placeholder{color:var(--muted)}
+.modal-divider{
+  display:flex;align-items:center;gap:10px;
+  margin:18px 0;font-size:12px;color:var(--muted);
+}
+.modal-divider::before,.modal-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.btn-google{
+  width:100%;background:var(--s2);border:1px solid var(--b2);
+  color:var(--text);border-radius:9px;padding:11px;
+  font-size:13px;font-weight:500;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  transition:all .15s;font-family:var(--fb);
+}
+.btn-google:hover{background:var(--s3);border-color:var(--acc)}
+.modal-footer{text-align:center;margin-top:16px;font-size:12.5px;color:var(--sub)}
+.modal-footer a{color:var(--acc);cursor:pointer;text-decoration:none}
+
+/* ════════════════════════════════
+   ONBOARDING
+════════════════════════════════ */
+#view-onboarding{
+  align-items:center;justify-content:center;
+  padding:40px 20px;
+  background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(74,144,217,.05) 0%,transparent 70%);
+}
+.onboard-inner{max-width:700px;width:100%}
+.onboard-step{font-family:var(--fm);font-size:10.5px;color:var(--blue);letter-spacing:3px;margin-bottom:14px;text-transform:uppercase}
+.onboard-title{font-family:var(--fd);font-size:44px;letter-spacing:2px;margin-bottom:6px;line-height:1}
+.onboard-desc{font-size:14px;color:var(--sub);margin-bottom:30px}
+.teams-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:28px}
+.team-card{
+  background:var(--s1);border:1.5px solid var(--border);
+  border-radius:11px;padding:13px 8px;text-align:center;
+  cursor:pointer;transition:all .15s;
+  position:relative;user-select:none;
+}
+.team-card:hover{border-color:var(--b2);transform:translateY(-2px)}
+.team-card.selected{border-color:var(--acc);background:rgba(255,107,53,.06)}
+.team-card.selected::after{content:'✓';position:absolute;top:5px;right:7px;font-size:10px;color:var(--acc);font-weight:700}
+.team-card-color{width:26px;height:26px;border-radius:50%;margin:0 auto 7px}
+.team-card-abbr{font-family:var(--fd);font-size:15px;letter-spacing:1px}
+.team-card-city{font-size:9.5px;color:var(--muted);margin-top:1px}
+.onboard-actions{display:flex;justify-content:space-between;align-items:center}
+.onboard-skip{font-size:13px;color:var(--muted);cursor:pointer;transition:color .15s}
+.onboard-skip:hover{color:var(--sub)}
+
+/* ════════════════════════════════
+   APP SHELL
+════════════════════════════════ */
+#view-app{flex-direction:row;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.app-sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:var(--s1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  height:100vh;overflow-y:auto;
+  transition:transform .25s ease;
+  z-index:100;
+}
+.sidebar-head{
+  padding:18px 16px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.app-logo{font-family:var(--fd);font-size:19px;letter-spacing:4px}
+.app-logo span{color:var(--acc)}
+.season-tag{
+  font-family:var(--fm);font-size:9.5px;color:var(--sub);
+  background:var(--s2);border:1px solid var(--border);
+  padding:3px 8px;border-radius:6px;letter-spacing:.5px;
+}
+.sidebar-user{
+  margin:12px 12px 0;padding:10px 12px;
+  background:var(--s2);border-radius:10px;border:1px solid var(--border);
+  display:flex;align-items:center;gap:9px;
+}
+.user-av{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:600;font-size:11px;color:#fff;
+}
+.user-name{font-size:12.5px;font-weight:500;line-height:1.2}
+.user-email{font-size:10.5px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+
+.sb-sec{padding:14px 12px 0}
+.sb-label{
+  font-size:9.5px;text-transform:uppercase;letter-spacing:2px;
+  color:var(--muted);font-weight:500;margin-bottom:5px;padding:0 4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:8px;
+  padding:7.5px 9px;border-radius:8px;
+  font-size:13px;font-weight:500;cursor:pointer;
+  transition:all .12s;color:var(--sub);
+  margin-bottom:1px;white-space:nowrap;
+}
+.nav-item svg{flex-shrink:0;opacity:.55;transition:opacity .12s}
+.nav-item:hover{background:var(--s2);color:var(--text)}
+.nav-item:hover svg{opacity:.85}
+.nav-item.active{background:rgba(255,107,53,.1);color:var(--acc)}
+.nav-item.active svg{opacity:1}
+
+.sb-sep{height:1px;background:var(--border);margin:10px 12px}
+
+.fav-row{
+  display:flex;align-items:center;gap:8px;
+  padding:6.5px 9px;border-radius:8px;
+  cursor:pointer;transition:background .12s;margin-bottom:1px;
+}
+.fav-row:hover{background:var(--s2)}
+.fav-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.fav-nm{font-size:12.5px;color:var(--sub)}
+.fav-tag{font-family:var(--fm);font-size:9.5px;color:var(--muted);margin-left:auto}
+.fav-init{
+  width:24px;height:24px;border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:11px;
+}
+
+.sb-foot{
+  margin-top:auto;padding:12px;
+  border-top:1px solid var(--border);
+}
+.sb-logout{
+  display:flex;align-items:center;gap:8px;
+  padding:7.5px 9px;border-radius:8px;
+  font-size:13px;color:var(--muted);cursor:pointer;
+  transition:all .12s;width:100%;background:none;
+  border:none;font-family:var(--fb);
+}
+.sb-logout:hover{background:var(--s2);color:var(--red)}
+
+/* ── MAIN CONTENT ── */
+.app-main{flex:1;display:flex;flex-direction:column;overflow:hidden;height:100vh;min-width:0}
+
+.topbar{
+  height:54px;display:flex;align-items:center;
+  justify-content:space-between;
+  padding:0 22px;gap:12px;flex-shrink:0;
+  border-bottom:1px solid var(--border);
+  background:rgba(7,9,15,.85);backdrop-filter:blur(20px);
+  z-index:50;
+}
+.topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+.page-title{font-family:var(--fd);font-size:20px;letter-spacing:2.5px;white-space:nowrap}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+.search-wrap{position:relative}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search-input{
+  background:var(--s2);border:1px solid var(--b2);
+  color:var(--text);font-family:var(--fb);font-size:13px;
+  padding:7px 12px 7px 32px;border-radius:8px;
+  outline:none;width:190px;transition:all .2s;
+}
+.search-input:focus{border-color:var(--acc);width:230px}
+.search-input::placeholder{color:var(--muted)}
+
+.ham{
+  display:none;width:34px;height:34px;border-radius:8px;
+  background:var(--s2);border:1px solid var(--border);
+  align-items:center;justify-content:center;
+  cursor:pointer;color:var(--sub);flex-shrink:0;
+}
+.overlay-bg{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.5);z-index:99;
+}
+
+/* ── PAGES ── */
+.page{flex:1;overflow-y:auto;padding:18px 22px}
+.page-scroll{flex:1;overflow-y:auto}
+
+/* shot chart */
+.sc-grid{
+  display:grid;
+  grid-template-columns:1fr 296px;
+  gap:14px;height:100%;padding:14px 22px;
+  overflow:hidden;
+}
+.sc-left{display:flex;flex-direction:column;gap:10px;min-width:0;overflow:hidden}
+.sc-right{
+  display:flex;flex-direction:column;gap:10px;
+  overflow-y:auto;
+}
+
+/* pills bar */
+.pills-row{
+  display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+  flex-shrink:0;
+}
+.pills-label{
+  font-family:var(--fm);font-size:10px;color:var(--muted);
+  letter-spacing:1.5px;text-transform:uppercase;
+  margin-right:3px;
+}
+.stat-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5.5px 11px;border-radius:7px;
+  background:var(--s2);border:1px solid var(--border);
+  font-size:12px;font-weight:500;color:var(--sub);
+  cursor:pointer;transition:all .14s;
+  font-family:var(--fb);white-space:nowrap;
+}
+.stat-pill svg{opacity:.55;transition:opacity .14s}
+.stat-pill:hover{border-color:var(--b2);color:var(--text)}
+.stat-pill:hover svg{opacity:.9}
+.stat-pill.active{
+  background:rgba(255,107,53,.12);
+  border-color:rgba(255,107,53,.35);color:var(--acc);
+}
+.stat-pill.active svg{opacity:1}
+
+/* court card */
+.court-card{
+  flex:1;background:var(--s1);
+  border:1px solid var(--border);border-radius:var(--r);
+  display:flex;flex-direction:column;overflow:hidden;
+  min-height:0;
+}
+.court-header{
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.court-player{font-size:13.5px;font-weight:600;line-height:1.2}
+.court-team{font-family:var(--fm);font-size:10px;color:var(--acc);letter-spacing:1.5px;margin-top:1px}
+.court-btns{display:flex;gap:6px}
+.court-btn{
+  display:flex;align-items:center;gap:4px;
+  padding:4.5px 10px;border-radius:6px;
+  background:var(--s2);border:1px solid var(--border);
+  font-size:11px;color:var(--sub);cursor:pointer;transition:all .14s;
+}
+.court-btn:hover{border-color:var(--b2);color:var(--text)}
+.court-btn.on{background:rgba(255,107,53,.1);border-color:rgba(255,107,53,.3);color:var(--acc)}
+
+.court-body{flex:1;background:#07080F;overflow:hidden;position:relative;min-height:0}
+.court-body svg{width:100%;height:100%;display:block}
+
+.court-footer{
+  padding:8px 14px;border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.legend{display:flex;align-items:center;gap:12px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--sub)}
+.leg-dot{width:7px;height:7px;border-radius:50%}
+.shot-count{font-family:var(--fm);font-size:10.5px;color:var(--sub)}
+
+/* panel cards (right column) */
+.panel{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;flex-shrink:0;
+}
+.panel-head{
+  padding:10px 13px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.panel-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--sub)}
+.panel-badge{
+  font-family:var(--fm);font-size:9px;letter-spacing:1px;
+  padding:2.5px 8px;border-radius:5px;text-transform:uppercase;
+}
+.panel-badge.g{background:rgba(62,207,142,.1);color:var(--green)}
+.panel-badge.o{background:rgba(255,107,53,.1);color:var(--acc)}
+.panel-badge.b{background:rgba(74,144,217,.1);color:var(--blue)}
+.panel-body{padding:12px 13px}
+
+.psearch-wrap{position:relative;margin-bottom:9px}
+.psearch-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.player-search{
+  width:100%;background:var(--s2);border:1px solid var(--b2);
+  border-radius:8px;color:var(--text);font-family:var(--fb);
+  font-size:13px;padding:8.5px 11px 8.5px 32px;
+  outline:none;transition:border-color .15s;
+}
+.player-search:focus{border-color:var(--acc)}
+.player-search::placeholder{color:var(--muted)}
+.player-results{display:flex;flex-direction:column;gap:1px;max-height:215px;overflow-y:auto}
+.player-result{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 8px;border-radius:7px;cursor:pointer;transition:background .12s;
+}
+.player-result:hover{background:var(--s2)}
+.player-result.selected{background:rgba(255,107,53,.08)}
+.pr-init{
+  width:28px;height:28px;border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:12px;
+}
+.pr-name{font-size:12.5px;font-weight:500;line-height:1.2}
+.pr-team{font-size:10px;color:var(--muted);font-family:var(--fm)}
+.pr-stat{font-family:var(--fm);font-size:10px;color:var(--sub);margin-left:auto;white-space:nowrap}
+
+/* stat boxes */
+.stat-boxes{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+.sbox{
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:9px;padding:10px 11px;
+}
+.sbox-lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:3px}
+.sbox-val{font-family:var(--fd);font-size:24px;letter-spacing:1px;line-height:1}
+.sbox-sub{font-size:9.5px;color:var(--sub);font-family:var(--fm);margin-top:2px}
+
+.sec-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--sub);margin-bottom:8px}
+
+/* zones */
+.zone-row{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.zone-nm{font-size:11px;color:var(--sub);width:72px;flex-shrink:0}
+.zone-bg{flex:1;height:4px;background:var(--s3);border-radius:99px;overflow:hidden}
+.zone-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.16,1,.3,1)}
+.zone-pc{font-family:var(--fm);font-size:10px;color:var(--sub);width:28px;text-align:right}
+
+/* comp table */
+.comp-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6.5px 0;border-bottom:1px solid var(--border);
+}
+.comp-row:last-child{border-bottom:none}
+.comp-lbl{font-size:11.5px;color:var(--sub)}
+.comp-vals{display:flex;gap:14px}
+.comp-val{
+  font-family:var(--fm);font-size:11.5px;font-weight:500;
+  display:flex;flex-direction:column;align-items:flex-end;gap:1px;
+}
+.comp-val-nm{font-size:9px;color:var(--muted);font-family:var(--fb)}
+.comp-val.better{color:var(--green)}
+.comp-val.worse{color:var(--red)}
+
+/* ── ADVANCED PAGES ── */
+.adv-grid{display:grid;grid-template-columns:1fr 290px;gap:14px;align-items:start}
+.adv-main{display:flex;flex-direction:column;gap:14px}
+.adv-side{display:flex;flex-direction:column;gap:12px}
+.adv-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.adv-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--border);
+}
+.adv-title{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)}
+.adv-body{padding:14px 16px}
+.adv-badge{
+  font-family:var(--fm);font-size:9px;letter-spacing:1.5px;
+  padding:3px 9px;border-radius:5px;text-transform:uppercase;
+}
+.adv-badge.green{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.25);color:var(--green)}
+.adv-badge.blue{background:rgba(74,144,217,.1);border:1px solid rgba(74,144,217,.25);color:var(--blue)}
+.adv-badge.orange{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.25);color:var(--acc)}
+.adv-badge.purple{background:rgba(155,89,255,.1);border:1px solid rgba(155,89,255,.25);color:#9B59FF}
+
+.metric-hero{display:flex;align-items:baseline;gap:6px;margin-bottom:3px}
+.metric-hero span:first-child{font-family:var(--fd);font-size:46px;letter-spacing:1px;line-height:1}
+.metric-unit{font-family:var(--fm);font-size:12px;color:var(--sub)}
+.metric-sub{font-size:11.5px;color:var(--sub);font-family:var(--fm);margin-bottom:3px}
+.metric-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6.5px 0;border-bottom:1px solid var(--border);
+}
+.metric-row:last-child{border-bottom:none}
+.metric-lbl{font-size:12px;color:var(--sub)}
+.metric-val{font-family:var(--fm);font-size:12.5px;font-weight:500;color:var(--text)}
+.metric-val.green{color:var(--green)}
+.metric-val.blue{color:var(--blue)}
+.metric-val.orange{color:var(--acc)}
+.metric-val.red{color:var(--red)}
+
+.mini-bar-list{display:flex;flex-direction:column;gap:6px}
+.mini-bar-row{display:flex;align-items:center;gap:7px}
+.mini-bar-label{font-size:11px;color:var(--sub);width:72px;flex-shrink:0}
+.mini-bar-bg{flex:1;height:4px;background:var(--s3);border-radius:99px;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:99px;transition:width .85s cubic-bezier(.16,1,.3,1)}
+.mini-bar-val{font-family:var(--fm);font-size:10.5px;width:26px;text-align:right}
+
+/* on/off */
+.onoff-bar-row{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.onoff-bar-label{font-size:12px;color:var(--sub);width:96px;flex-shrink:0}
+.onoff-bar-wrap{flex:1;position:relative;height:24px}
+.onoff-bar-center{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--b2)}
+.onoff-bar-on{position:absolute;top:5px;height:14px;right:50%;background:var(--green);border-radius:3px 0 0 3px;transition:width .85s cubic-bezier(.16,1,.3,1)}
+.onoff-bar-off{position:absolute;top:5px;height:14px;left:50%;background:var(--red);border-radius:0 3px 3px 0;transition:width .85s cubic-bezier(.16,1,.3,1)}
+.onoff-bar-vals{display:flex;gap:4px;font-family:var(--fm);font-size:10.5px;flex-shrink:0}
+.onoff-on-val{color:var(--green)}
+.onoff-off-val{color:var(--red)}
+
+/* lineup */
+.lineup-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.lineup-row:last-child{border-bottom:none}
+.lineup-dots{display:flex}
+.lineup-dot{
+  width:25px;height:25px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:10px;
+  border:2px solid var(--bg);margin-left:-5px;
+}
+.lineup-dot:first-child{margin-left:0}
+.lineup-info{flex:1;min-width:0}
+.lineup-names{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lineup-sub{font-size:10px;color:var(--muted);font-family:var(--fm);margin-top:1px}
+.lineup-rating{font-family:var(--fd);font-size:20px;letter-spacing:1px;flex-shrink:0}
+
+/* ── MISC ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--muted);border-radius:99px}
+
+#shot-tip{
+  position:fixed;z-index:500;
+  background:rgba(5,7,14,.95);border:1px solid var(--b2);
+  border-radius:9px;padding:8px 12px;
+  font-family:var(--fm);font-size:11.5px;
+  pointer-events:none;opacity:0;transition:opacity .12s;
+  backdrop-filter:blur(16px);
+}
+#shot-tip.show{opacity:1}
+.tip-result{font-size:12.5px;font-weight:600;margin-bottom:2px}
+.tip-zone{color:var(--sub);font-size:10.5px}
+
+#loading{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9998;gap:14px;
+}
+.load-logo{font-family:var(--fd);font-size:46px;letter-spacing:6px}
+.load-logo span{color:var(--acc)}
+.load-bar-bg{width:160px;height:2px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden}
+.load-bar{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:99px;transition:width .3s ease}
+.load-text{font-family:var(--fm);font-size:10.5px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1180px){
+  .sc-grid{grid-template-columns:1fr}
+  .sc-right{display:none}
+  .adv-grid{grid-template-columns:1fr}
+  .adv-side{display:none}
+}
+@media(max-width:900px){
+  :root{--sidebar:210px}
+  .features{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .app-sidebar{
+    position:fixed;left:0;top:0;bottom:0;
+    transform:translateX(-100%);
+  }
+  .app-sidebar.open{transform:translateX(0)}
+  .ham{display:flex}
+  .overlay-bg.show{display:block}
+  .sc-grid{padding:10px 14px}
+  .page{padding:14px 16px}
+  .features{grid-template-columns:1fr}
+  .teams-grid{grid-template-columns:repeat(3,1fr)}
+  .hero-actions{flex-direction:column;width:100%;align-items:stretch}
+  .hero-actions .btn{justify-content:center}
+}
+
+/* Legacy class aliases for JS compat */
+.zone-name{font-size:11px;color:var(--sub);width:72px;flex-shrink:0}
+.zone-bar-bg{flex:1;height:4px;background:var(--s3);border-radius:99px;overflow:hidden}
+.zone-bar-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.16,1,.3,1)}
+.zone-pct{font-family:var(--fm);font-size:10px;color:var(--sub);width:28px;text-align:right}
+.ps-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--sub);margin-bottom:8px}
+.metric-row-label{font-size:12px;color:var(--sub)}
+.metric-row-val{font-family:var(--fm);font-size:12.5px;font-weight:500;color:var(--text)}
+.metric-row-val.green{color:var(--green)}
+.metric-row-val.blue{color:var(--blue)}
+.metric-row-val.orange{color:var(--acc)}
+.metric-row-val.red{color:var(--red)}
+.adv-card-title{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)}
+.adv-card-body{padding:14px 16px}
+.adv-card-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
+.sidebar-nav-item{display:flex;align-items:center;gap:8px;padding:7.5px 9px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .12s;color:var(--sub);margin-bottom:1px}
+.sidebar-nav-item:hover{background:var(--s2);color:var(--text)}
+.sidebar-nav-item.active{background:rgba(255,107,53,.1);color:var(--acc)}
+.user-avatar{width:30px;height:30px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;color:#fff}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="load-logo">AIR<span>BALL</span></div>
+  <div class="load-bar-bg"><div class="load-bar" id="load-bar"></div></div>
+  <div class="load-text" id="load-text">iniciando...</div>
+</div>
+
+<!-- TOOLTIP -->
+<div id="shot-tip">
+  <div class="tip-result" id="tip-result"></div>
+  <div class="tip-zone" id="tip-zone"></div>
+</div>
+
+<!-- MOBILE OVERLAY -->
+<div class="overlay-bg" id="overlay-bg" onclick="closeSidebar()"></div>
+
+<!-- ══════════ LANDING ══════════ -->
+<div id="view-landing" class="view active">
+  <div class="land-grid"></div>
+  <div class="land-inner">
+
+    <nav class="land-nav">
+      <div class="land-logo">AIR<span>BALL</span></div>
+      <div class="nav-group">
+        <button class="btn btn-ghost" onclick="openLogin()">Entrar</button>
+        <button class="btn btn-primary btn-sm" onclick="openLogin()">Começar grátis →</button>
+      </div>
+    </nav>
+
+    <div class="hero-chip">🏀 NBA Analytics · 2025–26</div>
+    <h1 class="hero-title">ONDE O JOGO<br><em>ACONTECE</em></h1>
+    <p class="hero-desc">Shot charts interativos, métricas avançadas e dados reais de qualquer jogador da NBA.</p>
+    <div class="hero-actions">
+      <button class="btn btn-primary" style="font-size:15px;padding:12px 28px" onclick="openLogin()">⚡ Explorar agora</button>
+      <button class="btn btn-outline" onclick="goToApp()">Ver demo</button>
+    </div>
+
+    <!-- preview -->
+    <div class="preview-card">
+      <div class="preview-titlebar">
+        <div class="dot" style="background:#E05252"></div>
+        <div class="dot" style="background:#FFB347"></div>
+        <div class="dot" style="background:#3ECF8E"></div>
+        <div class="preview-label">SHOT CHART · STEPH CURRY · 3 PONTOS</div>
+      </div>
+      <div style="position:relative">
+        <svg viewBox="0 0 500 280" style="width:100%;display:block;padding:28px 20px 12px">
+          <rect x="10" y="10" width="480" height="260" rx="4" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.5"/>
+          <line x1="250" y1="10" x2="250" y2="270" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <rect x="10" y="90" width="115" height="100" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <rect x="375" y="90" width="115" height="100" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <path d="M10,55 Q125,8 125,140 Q125,272 10,225" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <path d="M490,55 Q365,8 365,140 Q365,272 490,225" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <circle cx="42" cy="74"  r="4.5" fill="#FF6B35" opacity=".9"/>
+          <circle cx="86" cy="36"  r="4.5" fill="#FF6B35" opacity=".7"/>
+          <circle cx="170" cy="22" r="4.5" fill="#3ECF8E" opacity=".9"/>
+          <circle cx="252" cy="14" r="4.5" fill="#FF6B35" opacity=".85"/>
+          <circle cx="336" cy="24" r="4.5" fill="#3ECF8E" opacity=".75"/>
+          <circle cx="415" cy="50" r="4.5" fill="#E05252" opacity=".7"/>
+          <circle cx="49"  cy="205" r="4.5" fill="#3ECF8E" opacity=".8"/>
+          <circle cx="108" cy="247" r="4.5" fill="#FF6B35" opacity=".6"/>
+          <circle cx="205" cy="259" r="4.5" fill="#3ECF8E" opacity=".7"/>
+          <circle cx="254" cy="261" r="4" fill="#FF6B35" opacity=".9"/>
+          <circle cx="343" cy="253" r="4" fill="#E05252" opacity=".5"/>
+          <circle cx="428" cy="228" r="4.5" fill="#3ECF8E" opacity=".5"/>
+          <circle cx="152" cy="36"  r="4" fill="#3ECF8E" opacity=".6"/>
+          <circle cx="306" cy="19"  r="4.5" fill="#FF6B35" opacity=".75"/>
+          <circle cx="374" cy="43"  r="4" fill="#3ECF8E" opacity=".8"/>
+          <circle cx="456" cy="74"  r="4.5" fill="#E05252" opacity=".65"/>
+        </svg>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to top,var(--s1) 20%,transparent);display:flex;align-items:flex-end;justify-content:center;padding-bottom:12px">
+          <span style="font-family:var(--fm);font-size:10.5px;color:var(--muted);letter-spacing:1px">Faça login para interagir →</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="features">
+      <div class="feat">
+        <div class="feat-icon">🏀</div>
+        <div class="feat-title">Shot Chart Interativo</div>
+        <div class="feat-desc">Quadra 2D com heatmap por zona e filtros por tipo de jogada.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Métricas Avançadas</div>
+        <div class="feat-desc">OCS, Gravity Index, PIR, On/Off Court e comparativos com a liga.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">🔍</div>
+        <div class="feat-title">Qualquer Jogador</div>
+        <div class="feat-desc">Busca em tempo real via NBA Stats API para todos os jogadores da temporada.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ MODAL ══════════ -->
+<div id="modal-login" class="modal-backdrop">
+  <div class="modal">
+    <button class="modal-close" onclick="closeLogin()">✕</button>
+    <div class="modal-logo">AIR<span>BALL</span></div>
+    <div class="modal-sub">Entre ou crie sua conta</div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" id="tab-login" onclick="switchTab('login')">Entrar</div>
+      <div class="modal-tab" id="tab-register" onclick="switchTab('register')">Criar conta</div>
+    </div>
+    <button class="btn-google" onclick="doLogin()">
+      <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continuar com Google
+    </button>
+    <div class="modal-divider">ou</div>
+    <div class="field"><label>E-mail</label><input id="login-email" type="email" placeholder="seu@email.com"></div>
+    <div class="field"><label>Senha</label><input id="login-password" type="password" placeholder="••••••••"></div>
+    <div id="login-error" style="color:var(--red);font-size:11.5px;text-align:center;margin-bottom:8px;display:none;font-family:var(--fm)"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="handleAuth()">
+      <span id="auth-lbl">Entrar na conta</span>
+    </button>
+    <div class="modal-footer" id="modal-foot">
+      Não tem conta? <a onclick="switchTab('register')">Criar gratuitamente</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ONBOARDING ══════════ -->
+<div id="view-onboarding" class="view">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(74,144,217,.05) 0%,transparent 70%)">
+    <div class="onboard-inner">
+      <div class="onboard-step">PASSO 1 DE 2</div>
+      <h2 class="onboard-title">SEUS TIMES</h2>
+      <p class="onboard-desc">Escolha os times que quer acompanhar. Pode mudar depois.</p>
+      <div class="teams-grid" id="teams-grid"></div>
+      <div class="onboard-actions">
+        <span class="onboard-skip" onclick="goToApp()">Pular por agora</span>
+        <button class="btn btn-primary" style="padding:11px 24px" onclick="goToApp()">Continuar →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="view-app" class="view">
+
+  <!-- SIDEBAR -->
+  <aside class="app-sidebar" id="app-sidebar">
+    <div class="sidebar-head">
+      <div class="app-logo">AIR<span>BALL</span></div>
+      <div class="season-tag">2025–26</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-av" id="user-av">JD</div>
+      <div style="min-width:0">
+        <div class="user-name" id="user-name">Jogador</div>
+        <div class="user-email" id="user-email">usuario@email.com</div>
+      </div>
+    </div>
+
+    <div class="sb-sec" style="margin-top:10px">
+      <div class="sb-label">Análise</div>
+      <div class="nav-item" onclick="switchPage('shotchart',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8.5 8.5h.01M15.5 8.5h.01M9 14s1 1.5 3 1.5 3-1.5 3-1.5"/></svg>
+        Quadra 2D
+      </div>
+      <div class="nav-item" onclick="switchPage('drives',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Drives & Passes
+      </div>
+      <div class="nav-item" onclick="switchPage('defense',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Defesa
+      </div>
+      <div class="nav-item" onclick="switchPage('advanced',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Métricas Avançadas
+      </div>
+      <div class="nav-item" onclick="switchPage('onoff',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        On/Off Court
+      </div>
+    </div>
+
+    <div class="sb-sep"></div>
+
+    <div class="sb-sec">
+      <div class="sb-label">Times Favoritos</div>
+      <div class="fav-row"><div class="fav-dot" style="background:#007A33"></div><span class="fav-nm">Boston Celtics</span><span class="fav-tag">BOS</span></div>
+      <div class="fav-row"><div class="fav-dot" style="background:#FFC72C"></div><span class="fav-nm">Golden State</span><span class="fav-tag">GSW</span></div>
+      <div class="fav-row"><div class="fav-dot" style="background:#C8102E"></div><span class="fav-nm">Chicago Bulls</span><span class="fav-tag">CHI</span></div>
+    </div>
+
+    <div class="sb-sep"></div>
+
+    <div class="sb-sec">
+      <div class="sb-label">Jogadores Favoritos</div>
+      <div class="fav-row" onclick="selectPlayerById(0)">
+        <div class="fav-init" style="background:rgba(255,196,44,.12);color:#FFC72C">SC</div>
+        <span class="fav-nm">Steph Curry</span><span class="fav-tag">GSW</span>
+      </div>
+      <div class="fav-row" onclick="selectPlayerById(2)">
+        <div class="fav-init" style="background:rgba(0,122,51,.12);color:#007A33">JT</div>
+        <span class="fav-nm">Jayson Tatum</span><span class="fav-tag">BOS</span>
+      </div>
+      <div class="fav-row" onclick="selectPlayerById(3)">
+        <div class="fav-init" style="background:rgba(74,144,217,.12);color:#4A90D9">DL</div>
+        <span class="fav-nm">Damian Lillard</span><span class="fav-tag">MIL</span>
+      </div>
+    </div>
+
+    <div class="sb-foot">
+      <button class="sb-logout" onclick="showView('view-landing')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sair
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="app-main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="ham" id="ham-btn" onclick="toggleSidebar()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="page-title" id="page-title">AIRBALL</div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-wrap">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="search-input" type="text" placeholder="Buscar jogador...">
+        </div>
+        <div id="topbar-av" style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;cursor:pointer;flex-shrink:0">JD</div>
+      </div>
+    </header>
+
+    <!-- ── SHOT CHART ── -->
+    <div id="shotchart-layout" class="page-scroll sc-grid" style="display:none">
+
+      <div class="sc-left">
+        <!-- pills -->
+        <div class="pills-row">
+          <span class="pills-label">JOGADA</span>
+          <button class="stat-pill active" onclick="selectStat(this,'3pt')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 13 Q3 3 8 3 Q13 3 13 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><text x="5.5" y="13" font-size="6.5" font-family="'Bebas Neue'" fill="currentColor">3</text></svg>3 Pts
+          </button>
+          <button class="stat-pill" onclick="selectStat(this,'mid')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2 L14 8 L8 14 L2 8 Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></svg>Mid
+          </button>
+          <button class="stat-pill" onclick="selectStat(this,'floater')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 12 Q5 4 8 5 Q11 6 14 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14" cy="3" r="1.8" fill="currentColor"/></svg>Floater
+          </button>
+          <button class="stat-pill" onclick="selectStat(this,'pullup')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><line x1="8" y1="13" x2="8" y2="4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polyline points="5,7 8,3 11,7" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none"/></svg>Pull-up
+          </button>
+          <button class="stat-pill" onclick="selectStat(this,'stepback')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11 8 L5 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polyline points="8,5 5,8 8,11" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none"/></svg>Step
+          </button>
+          <button class="stat-pill" onclick="selectStat(this,'catchshoot')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 11 L3 7 Q3 4 6 3 Q9 2 10 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="4" r="2" fill="currentColor" opacity=".85"/></svg>C&amp;S
+          </button>
+          <button class="stat-pill" onclick="selectStat(this,'layup')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="10" cy="3" r="1.8" fill="currentColor"/><path d="M10 5 L8 9 L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Layup
+          </button>
+          <button class="stat-pill" onclick="selectStat(this,'crossover')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 4 Q7 8 13 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3 12 Q7 8 13 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Cross
+          </button>
+          <button class="stat-pill" style="margin-left:auto" onclick="toggleHeatmap()">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="6" y="2" width="4" height="8" rx="2" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="12" r="2.4" stroke="currentColor" stroke-width="1.4"/></svg>Heatmap
+          </button>
+        </div>
+
+        <!-- court -->
+        <div class="court-card">
+          <div class="court-header">
+            <div>
+              <div class="court-player" id="co-player">STEPH CURRY</div>
+              <div class="court-team" id="co-team">GSW · #30</div>
+            </div>
+            <div class="court-btns">
+              <div class="court-btn" id="heatmap-badge" style="display:none">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><rect x="6" y="2" width="4" height="7" rx="2" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="12" r="2.2" stroke="currentColor" stroke-width="1.4"/></svg>
+                Heatmap
+              </div>
+            </div>
+          </div>
+
+          <div class="court-body">
+            <svg id="court2d" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;cursor:crosshair">
+              <defs>
+                <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#1A1008"/>
+                  <stop offset="100%" stop-color="#120C05"/>
+                </linearGradient>
+                <linearGradient id="paintGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#FF6B35" stop-opacity="0.07"/>
+                  <stop offset="100%" stop-color="#FF6B35" stop-opacity="0.02"/>
+                </linearGradient>
+              </defs>
+              <rect width="500" height="470" fill="url(#floorGrad)"/>
+              <g stroke="#1E140A" stroke-width="0.8" opacity="0.6">
+                <line x1="0" y1="47"  x2="500" y2="47"/><line x1="0" y1="94"  x2="500" y2="94"/>
+                <line x1="0" y1="141" x2="500" y2="141"/><line x1="0" y1="188" x2="500" y2="188"/>
+                <line x1="0" y1="235" x2="500" y2="235"/><line x1="0" y1="282" x2="500" y2="282"/>
+                <line x1="0" y1="329" x2="500" y2="329"/><line x1="0" y1="376" x2="500" y2="376"/>
+                <line x1="0" y1="423" x2="500" y2="423"/>
+              </g>
+              <rect x="10" y="10" width="480" height="450" rx="4" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="1.8"/>
+              <line x1="10" y1="235" x2="490" y2="235" stroke="rgba(255,255,255,0.09)" stroke-width="1.2"/>
+              <circle cx="250" cy="235" r="60" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1.2"/>
+              <rect x="170" y="10" width="160" height="190" fill="url(#paintGrad)" stroke="rgba(255,255,255,0.13)" stroke-width="1.2"/>
+              <rect x="185" y="10" width="130" height="190" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+              <path d="M218,85 A32,32,0,0,1,282,85" fill="none" stroke="rgba(255,107,53,0.32)" stroke-width="1.5"/>
+              <g stroke="rgba(255,255,255,0.11)" stroke-width="1" fill="none">
+                <line x1="170" y1="60"  x2="185" y2="60"/><line x1="315" y1="60"  x2="330" y2="60"/>
+                <line x1="170" y1="100" x2="185" y2="100"/><line x1="315" y1="100" x2="330" y2="100"/>
+                <line x1="170" y1="140" x2="185" y2="140"/><line x1="315" y1="140" x2="330" y2="140"/>
+              </g>
+              <circle cx="250" cy="200" r="60" fill="none" stroke="rgba(255,255,255,0.11)" stroke-width="1.2"/>
+              <line x1="37"  y1="10"  x2="37"  y2="130" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+              <line x1="463" y1="10"  x2="463" y2="130" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+              <path d="M37,130 A214,214,0,0,1,463,130" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+              <circle cx="250" cy="52" r="15" fill="none" stroke="rgba(255,107,53,0.65)" stroke-width="2"/>
+              <circle cx="250" cy="52" r="5"  fill="rgba(255,107,53,0.48)"/>
+              <line x1="218" y1="25" x2="282" y2="25" stroke="rgba(255,255,255,0.48)" stroke-width="3"/>
+              <g font-family="'JetBrains Mono',monospace" font-size="8.5" fill="rgba(255,255,255,0.13)" text-anchor="middle">
+                <text x="60"  y="55">CORNER E</text>
+                <text x="440" y="55">CORNER D</text>
+                <text x="80"  y="160">ÂNGULO E</text>
+                <text x="420" y="160">ÂNGULO D</text>
+                <text x="250" y="175">GARRAFÃO</text>
+                <text x="250" y="290">TOPO ARCO</text>
+              </g>
+              <g id="shots-layer2d"></g>
+              <g id="heatmap-layer" opacity="0" style="transition:opacity .4s"></g>
+            </svg>
+          </div>
+
+          <div class="court-footer">
+            <div class="legend">
+              <div class="leg-item"><div class="leg-dot" style="background:#3ECF8E"></div>Convertido</div>
+              <div class="leg-item"><div class="leg-dot" style="background:#E05252"></div>Errado</div>
+            </div>
+            <div class="shot-count"><span id="shots-count">0</span> arm · <span id="made-count" style="color:var(--green)">0</span> certos</div>
+          </div>
+        </div>
+      </div><!-- /sc-left -->
+
+      <div class="sc-right">
+
+        <!-- player selector -->
+        <div class="panel">
+          <div class="panel-head"><span class="panel-title">Jogador</span></div>
+          <div class="panel-body">
+            <div class="psearch-wrap">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input class="player-search" type="text" placeholder="Nome ou time..." id="player-search-input" oninput="filterPlayers(this.value)">
+            </div>
+            <div class="player-results" id="player-results"></div>
+          </div>
+        </div>
+
+        <!-- stats -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Stats · <span id="ss-stat-name" style="color:var(--acc);font-family:var(--fb);letter-spacing:0;text-transform:none;font-weight:600;font-size:11px">3 Pontos</span></span>
+          </div>
+          <div class="panel-body">
+            <div class="stat-boxes">
+              <div class="sbox"><div class="sbox-lbl">Tentativas</div><div class="sbox-val" id="sf-att" style="color:var(--text)">—</div><div class="sbox-sub">temporada</div></div>
+              <div class="sbox"><div class="sbox-lbl">Convertidos</div><div class="sbox-val" id="sf-made" style="color:var(--green)">—</div><div class="sbox-sub">arremessos</div></div>
+              <div class="sbox"><div class="sbox-lbl">Aproveit.</div><div class="sbox-val" id="sf-pct" style="color:var(--acc)">—</div><div class="sbox-sub">% acerto</div></div>
+              <div class="sbox"><div class="sbox-lbl">Média/jogo</div><div class="sbox-val" id="sf-avg" style="color:var(--acc2)">—</div><div class="sbox-sub">por partida</div></div>
+            </div>
+            <div class="sec-lbl">Por Zona</div>
+            <div id="zone-breakdown"></div>
+          </div>
+        </div>
+
+        <!-- vs league -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">VS Liga · 2025–26</span>
+            <span class="panel-badge g">COMP</span>
+          </div>
+          <div class="panel-body" style="padding:8px 13px">
+            <div id="comp-body"></div>
+          </div>
+        </div>
+
+      </div><!-- /sc-right -->
+    </div><!-- /shotchart -->
+
+    <!-- ── DRIVES PAGE ── -->
+    <div id="page-drives" class="page" style="display:none">
+      <div class="adv-grid">
+        <div class="adv-main">
+          <div class="adv-card">
+            <div class="adv-head"><div class="adv-title">PASS MAP · <span id="pm-player-name" style="color:var(--acc)">STEPH CURRY</span></div><div class="adv-badge green">xAST</div></div>
+            <div style="position:relative">
+              <svg id="pass-map-svg" viewBox="0 0 500 320" style="width:100%;display:block">
+                <rect width="500" height="320" fill="#0A0D15"/>
+                <rect x="15" y="15" width="470" height="290" rx="4" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1.2"/>
+                <rect x="190" y="15" width="120" height="155" fill="rgba(255,107,53,0.04)" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+                <ellipse cx="250" cy="170" rx="60" ry="60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                <circle cx="250" cy="42" r="12" fill="none" stroke="rgba(255,107,53,0.45)" stroke-width="1.5"/>
+                <circle cx="250" cy="42" r="4" fill="rgba(255,107,53,0.38)"/>
+                <path d="M 28 135 L 28 15" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                <path d="M 472 135 L 472 15" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                <path d="M 28 135 A 222 222 0 0 1 472 135" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                <g id="pass-arrows"></g>
+                <circle id="pm-player-dot" cx="250" cy="220" r="10" fill="#FFC72C" opacity="0.9"/>
+                <text x="250" y="245" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="9" font-family="'JetBrains Mono',monospace">ORIGEM</text>
+              </svg>
+              <div style="position:absolute;bottom:10px;right:14px;display:flex;gap:12px">
+                <div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--sub)"><div style="width:16px;height:2.5px;background:#3ECF8E;border-radius:2px"></div>Layup</div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--sub)"><div style="width:16px;height:2.5px;background:#FF6B35;border-radius:2px"></div>3 Pts</div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--sub)"><div style="width:16px;height:2.5px;background:#4A90D9;border-radius:2px"></div>Mid</div>
+              </div>
+            </div>
+          </div>
+          <div class="adv-card">
+            <div class="adv-head"><div class="adv-title">MAPA DE DRIVES</div><div class="adv-badge purple">BALL HANDLING</div></div>
+            <svg id="drive-map-svg" viewBox="0 0 500 320" style="width:100%;display:block">
+              <rect width="500" height="320" fill="#0A0D15"/>
+              <rect x="15" y="15" width="470" height="290" rx="4" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1.2"/>
+              <rect x="190" y="15" width="120" height="155" fill="rgba(255,107,53,0.04)" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+              <circle cx="250" cy="42" r="12" fill="none" stroke="rgba(255,107,53,0.45)" stroke-width="1.5"/>
+              <circle cx="250" cy="42" r="4" fill="rgba(255,107,53,0.38)"/>
+              <path d="M 28 135 A 222 222 0 0 1 472 135" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+              <g id="drive-arrows"></g>
+            </svg>
+          </div>
+        </div>
+        <div class="adv-side">
+          <div class="adv-card">
+            <div class="adv-head"><div class="adv-title">ASSIST QUALITY</div><div class="adv-badge green">xAST</div></div>
+            <div class="adv-body">
+              <div class="metric-hero"><span id="xast-val">—</span><span class="metric-unit">xAST/g</span></div>
+              <div class="metric-sub" id="xast-sub">—</div>
+              <div style="height:1px;background:var(--border);margin:12px 0"></div>
+              <div class="sec-lbl" style="margin-bottom:8px">Tipo de Assistência</div>
+              <div class="mini-bar-list" id="ast-type-list"></div>
+              <div style="height:1px;background:var(--border);margin:12px 0"></div>
+              <div class="metric-row"><span class="metric-lbl">Pot. Assists/g</span><span class="metric-val green" id="pot-ast">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Conversão</span><span class="metric-val" id="pot-conv">—</span></div>
+            </div>
+          </div>
+          <div class="adv-card">
+            <div class="adv-head"><div class="adv-title">DRIVES</div><div class="adv-badge purple">BALL HANDLING</div></div>
+            <div class="adv-body">
+              <div class="metric-hero"><span id="drives-val">—</span><span class="metric-unit">/jogo</span></div>
+              <div class="metric-sub" id="drives-sub">penetrações por partida</div>
+              <div style="height:1px;background:var(--border);margin:12px 0"></div>
+              <div class="metric-row"><span class="metric-lbl">FG% em drives</span><span class="metric-val" id="drive-fg">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Passes após drive</span><span class="metric-val" id="drive-pass">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Faltas sofridas</span><span class="metric-val" id="drive-foul">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Dribbles/posse</span><span class="metric-val" id="drive-drib">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Tempo c/ bola</span><span class="metric-val" id="drive-top">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DEFENSE PAGE ── -->
+    <div id="page-defense" class="page" style="display:none">
+      <div class="adv-grid">
+        <div class="adv-main">
+          <div class="adv-card">
+            <div class="adv-head">
+              <div class="adv-title">HEATMAP DEFENSIVO · <span id="def-player-name" style="color:var(--blue)">STEPH CURRY</span></div>
+              <div class="adv-badge blue">ON-BALL DEFENSE</div>
+            </div>
+            <svg id="def-heatmap-svg" viewBox="0 0 500 320" style="width:100%;display:block">
+              <defs>
+                <radialGradient id="hg0" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#4A90D9" stop-opacity="0.55"/><stop offset="100%" stop-color="#4A90D9" stop-opacity="0"/></radialGradient>
+                <radialGradient id="hg1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#E05252" stop-opacity="0.5"/><stop offset="100%" stop-color="#E05252" stop-opacity="0"/></radialGradient>
+                <radialGradient id="hg2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#3ECF8E" stop-opacity="0.45"/><stop offset="100%" stop-color="#3ECF8E" stop-opacity="0"/></radialGradient>
+              </defs>
+              <rect width="500" height="320" fill="#0A0D15"/>
+              <rect x="15" y="15" width="470" height="290" rx="4" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1.2"/>
+              <rect x="190" y="15" width="120" height="155" fill="rgba(74,144,217,0.04)" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+              <circle cx="250" cy="42" r="12" fill="none" stroke="rgba(74,144,217,0.45)" stroke-width="1.5"/>
+              <circle cx="250" cy="42" r="4" fill="rgba(74,144,217,0.38)"/>
+              <path d="M 28 135 A 222 222 0 0 1 472 135" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+              <g id="def-heat-zones"></g>
+              <text x="250" y="105" text-anchor="middle" fill="rgba(255,255,255,0.18)" font-size="8.5" font-family="'JetBrains Mono',monospace">GARRAFÃO</text>
+              <text x="70"  y="90"  text-anchor="middle" fill="rgba(255,255,255,0.14)" font-size="7.5" font-family="'JetBrains Mono',monospace">CORNER E</text>
+              <text x="430" y="90"  text-anchor="middle" fill="rgba(255,255,255,0.14)" font-size="7.5" font-family="'JetBrains Mono',monospace">CORNER D</text>
+            </svg>
+            <div style="padding:9px 16px;display:flex;gap:14px;border-top:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--sub)"><div style="width:8px;height:8px;border-radius:50%;background:#3ECF8E"></div>Defende bem</div>
+              <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--sub)"><div style="width:8px;height:8px;border-radius:50%;background:#E05252"></div>Vulnerável</div>
+            </div>
+          </div>
+        </div>
+        <div class="adv-side">
+          <div class="adv-card">
+            <div class="adv-head"><div class="adv-title">DEFENSIVE ACTIVITY</div><div class="adv-badge blue">DAI</div></div>
+            <div class="adv-body">
+              <div class="metric-hero"><span id="dai-val" style="color:var(--blue)">—</span><span class="metric-unit">DAI</span></div>
+              <div class="metric-sub" id="dai-sub">deflections + steals×1.2 + contests×0.8</div>
+              <div style="height:1px;background:var(--border);margin:12px 0"></div>
+              <div class="mini-bar-list" id="dai-list"></div>
+            </div>
+          </div>
+          <div class="adv-card">
+            <div class="adv-head"><div class="adv-title">ON-BALL DEFENSE</div><div class="adv-badge blue">OPONENTE</div></div>
+            <div class="adv-body">
+              <div class="metric-row"><span class="metric-lbl">FG% adversário</span><span class="metric-val green" id="def-fg-against">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Contests/g</span><span class="metric-val" id="def-contests">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Deflections/g</span><span class="metric-val blue" id="def-deflections">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Steals/g</span><span class="metric-val blue" id="def-steals">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADVANCED PAGE ── -->
+    <div id="page-advanced" class="page" style="display:none">
+      <div class="adv-grid">
+        <div class="adv-main">
+          <div class="adv-card">
+            <div class="adv-head">
+              <div class="adv-title">GRAVITY INDEX · <span id="adv-player-name" style="color:var(--acc2)">STEPH CURRY</span></div>
+              <div class="adv-badge orange">OFF-BALL IMPACT</div>
+            </div>
+            <svg id="grav-map-svg" viewBox="0 0 500 320" style="width:100%;display:block">
+              <defs>
+                <radialGradient id="gravGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%"   stop-color="#FFB347" stop-opacity="0.35"/>
+                  <stop offset="60%"  stop-color="#FF6B35" stop-opacity="0.12"/>
+                  <stop offset="100%" stop-color="#FF6B35" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <rect width="500" height="320" fill="#0A0D15"/>
+              <rect x="15" y="15" width="470" height="290" rx="4" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1.2"/>
+              <rect x="190" y="15" width="120" height="155" fill="rgba(255,107,53,0.03)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+              <circle cx="250" cy="42" r="12" fill="none" stroke="rgba(255,107,53,0.38)" stroke-width="1.5"/>
+              <circle cx="250" cy="42" r="4" fill="rgba(255,107,53,0.32)"/>
+              <path d="M 28 135 A 222 222 0 0 1 472 135" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+              <circle id="grav-aura"  cx="250" cy="200" r="90" fill="url(#gravGrad)"/>
+              <circle id="grav-ring1" cx="250" cy="200" r="90" fill="none" stroke="rgba(255,179,71,0.22)" stroke-width="1" stroke-dasharray="6 4"/>
+              <circle id="grav-ring2" cx="250" cy="200" r="55" fill="none" stroke="rgba(255,179,71,0.32)" stroke-width="1" stroke-dasharray="4 4"/>
+              <circle id="grav-dot"   cx="250" cy="200" r="9"  fill="#FFB347"/>
+              <text id="grav-label" x="250" y="213" text-anchor="middle" fill="rgba(0,0,0,0.65)" font-size="7" font-family="'Bebas Neue',sans-serif">SC</text>
+              <g id="grav-defenders"></g>
+            </svg>
+          </div>
+        </div>
+        <div class="adv-side">
+          <div class="adv-card">
+            <div class="adv-head"><div class="adv-title">OFFENSIVE CREATION</div><div class="adv-badge orange">OCS</div></div>
+            <div class="adv-body">
+              <div class="metric-hero"><span id="ocs-val" style="color:var(--acc2)">—</span><span class="metric-unit">OCS</span></div>
+              <div class="metric-sub">Offensive Creation Score — Airball</div>
+              <div style="height:1px;background:var(--border);margin:12px 0"></div>
+              <div class="metric-row"><span class="metric-lbl">Points Created/g</span><span class="metric-val orange" id="pts-created">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Pontos próprios</span><span class="metric-val" id="pts-own">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Pontos p/ assist</span><span class="metric-val" id="pts-ast">—</span></div>
+              <div style="height:1px;background:var(--border);margin:12px 0"></div>
+              <div class="metric-row"><span class="metric-lbl">Gravity Index</span><span class="metric-val orange" id="grav-idx">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">% posses c/ dupla</span><span class="metric-val" id="grav-double">—</span></div>
+            </div>
+          </div>
+          <div class="adv-card">
+            <div class="adv-head"><div class="adv-title">PLAYMAKING IMPACT</div><div class="adv-badge green">PIR</div></div>
+            <div class="adv-body">
+              <div class="metric-hero"><span id="pir-val" style="color:var(--green)">—</span><span class="metric-unit">PIR</span></div>
+              <div class="metric-sub">Playmaking Impact Rating — Airball</div>
+              <div style="height:1px;background:var(--border);margin:12px 0"></div>
+              <div class="metric-row"><span class="metric-lbl">TOV sob pressão</span><span class="metric-val red" id="tov-press">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">TOV em drive</span><span class="metric-val red" id="tov-drive">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">TOV em PnR</span><span class="metric-val red" id="tov-pnr">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">TOV Rate ctx.</span><span class="metric-val" id="tov-rate">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ON/OFF PAGE ── -->
+    <div id="page-onoff" class="page" style="display:none">
+      <div class="adv-grid">
+        <div class="adv-main">
+          <div class="adv-card">
+            <div class="adv-head">
+              <div class="adv-title">ON/OFF NET RATING · <span id="onoff-player-name" style="color:var(--acc)">STEPH CURRY</span></div>
+              <div class="adv-badge orange">IMPACTO</div>
+            </div>
+            <div class="adv-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
+                <div style="background:rgba(62,207,142,.06);border:1px solid rgba(62,207,142,.14);border-radius:10px;padding:16px;text-align:center">
+                  <div style="font-size:10px;color:var(--sub);margin-bottom:6px;font-family:var(--fm);letter-spacing:1px;text-transform:uppercase">Com ele</div>
+                  <div id="net-on" style="font-family:var(--fd);font-size:44px;letter-spacing:2px;line-height:1;color:var(--green)">—</div>
+                  <div style="font-size:10px;color:var(--sub);margin-top:3px;font-family:var(--fm)">Net Rating ON</div>
+                </div>
+                <div style="background:rgba(224,82,82,.06);border:1px solid rgba(224,82,82,.14);border-radius:10px;padding:16px;text-align:center">
+                  <div style="font-size:10px;color:var(--sub);margin-bottom:6px;font-family:var(--fm);letter-spacing:1px;text-transform:uppercase">Sem ele</div>
+                  <div id="net-off" style="font-family:var(--fd);font-size:44px;letter-spacing:2px;line-height:1;color:var(--red)">—</div>
+                  <div style="font-size:10px;color:var(--sub);margin-top:3px;font-family:var(--fm)">Net Rating OFF</div>
+                </div>
+              </div>
+              <div class="sec-lbl" style="margin-bottom:12px">Impacto por Métrica</div>
+              <div id="onoff-bars"></div>
+            </div>
+          </div>
+          <div class="adv-card">
+            <div class="adv-head"><div class="adv-title">LINEUP SYNERGY</div><div class="adv-badge purple">COMBINAÇÕES</div></div>
+            <div class="adv-body"><div id="lineup-list"></div></div>
+          </div>
+        </div>
+        <div class="adv-side">
+          <div class="adv-card">
+            <div class="adv-head"><div class="adv-title">DEFENSIVE DISRUPTION</div><div class="adv-badge blue">DDI</div></div>
+            <div class="adv-body">
+              <div class="metric-hero"><span id="ddi-val" style="color:var(--blue)">—</span><span class="metric-unit">DDI</span></div>
+              <div style="height:1px;background:var(--border);margin:12px 0"></div>
+              <div class="metric-row"><span class="metric-lbl">Usage ON</span><span class="metric-val" id="oo-usage">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">OffRtg ON</span><span class="metric-val orange" id="oo-off">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">DefRtg ON</span><span class="metric-val blue" id="oo-def">—</span></div>
+              <div class="metric-row"><span class="metric-lbl">Pace ON</span><span class="metric-val" id="oo-pace">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /app-main -->
+</div><!-- /view-app -->
+
+<script>
+// modal tab logic
+let activeTab = 'login';
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  document.getElementById('auth-lbl').textContent = tab==='login' ? 'Entrar na conta' : 'Criar conta';
+  document.getElementById('modal-foot').innerHTML = tab==='login'
+    ? 'Não tem conta? <a onclick="switchTab(\'register\')">Criar gratuitamente</a>'
+    : 'Já tem conta? <a onclick="switchTab(\'login\')">Entrar</a>';
+}
+function handleAuth() { if(activeTab==='login') doLogin(); else doRegister(); }
+
+// mobile sidebar
+function toggleSidebar() {
+  document.getElementById('app-sidebar').classList.toggle('open');
+  document.getElementById('overlay-bg').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('app-sidebar').classList.remove('open');
+  document.getElementById('overlay-bg').classList.remove('show');
+}
+
+// legacy aliases so the existing JS still works
+function selectPlayerById(idx) {
+  if(window.PLAYERS && PLAYERS[idx]) { currentPlayer = PLAYERS[idx]; renderAll(); }
+}
+</script>
+<script>
+/* ══════════════════════════════════════════
+   DATA
+══════════════════════════════════════════ */
+const PLAYERS = [
+  { id:0, name:"Steph Curry",       initials:"SC", team:"GSW", teamFull:"GSW · #30", color:"#FFC72C", colorHex:0xFFC72C,
+    stats:{att:834,made:347,pct:41.6,avg:5.1},
+    zones:[{name:"Corner E",pct:44,made:38,att:86},{name:"Corner D",pct:47,made:41,att:87},{name:"Ângulo E",pct:39,made:62,att:159},{name:"Ângulo D",pct:40,made:58,att:145},{name:"Topo Arco",pct:42,made:148,att:352}],
+    vsLeague:[{label:"3P%",player:"41.6%",league:"36.1%",better:true},{label:"3PM/g",player:"5.1",league:"2.4",better:true},{label:"3PA/g",player:"12.2",league:"6.6",better:true},{label:"Dist.",player:"26.1ft",league:"23.8ft",better:true}],
+    shots3:  [[-0.8,0.3],[-0.6,0.5],[-0.4,0.8],[0,0.9],[0.4,0.8],[0.6,0.5],[0.8,0.3],[-0.9,-0.05],[0.9,-0.05],[-0.5,0.6],[0.5,0.6],[0,0.85],[-0.7,0.42],[0.7,0.42],[-0.3,0.9],[0.3,0.9]],
+    shotsMid:[[-0.3,0.4],[0.3,0.4],[-0.2,0.5],[0.2,0.5],[0,0.5],[-0.4,0.32],[0.4,0.32]],
+    shotsFloat:[[0,0.25],[-0.1,0.2],[0.1,0.22],[-0.15,0.28],[0.15,0.28]],
+    shotsPull:  [[-0.3,0.45],[0.3,0.45],[0,0.55],[-0.5,0.35],[0.5,0.35],[0,0.4]],
+    shotsStep:  [[-0.4,0.55],[0.4,0.55],[0,0.7],[-0.6,0.42],[0.6,0.42]],
+    shotsCatch: [[-0.85,0.02],[0.85,0.02],[-0.7,0.38],[0.7,0.38],[0,0.88],[-0.45,0.75],[0.45,0.75]],
+    shotsLayup: [[-0.1,0.06],[0.1,0.06],[0,0.1],[-.05,0.08],[.05,0.08]],
+    shotsCross: [[-0.25,0.42],[0.25,0.42],[0,0.5],[-0.4,0.38],[0.4,0.38]],
+    // ── ADVANCED ──
+    adv:{
+      xast:11.2, xastSub:"#1 na liga em qualidade de assistências",
+      astTypes:[{label:"Layup/Dunk",pct:38,color:"var(--green)"},{label:"3 Pontos",pct:44,color:"var(--acc)"},{label:"Mid-Range",pct:18,color:"var(--blue)"}],
+      potAst:18.4, potConv:"61%",
+      drives:6.2, driveFg:"47.8%", drivePass:"3.1/g", driveFoul:"1.8/g", driveDrib:"3.2", driveTop:"4.1s",
+      drivePaths:[[250,260,170,70],[200,270,210,80],[310,255,190,65],[180,280,160,70],[280,265,200,60]],
+      passArrows:[{from:[250,220],to:[240,55],type:"layup",weight:5},{from:[250,220],to:[45,35],type:"3pt",weight:4},{from:[250,220],to:[455,35],type:"3pt",weight:4},{from:[250,220],to:[100,170],type:"mid",weight:3},{from:[250,220],to:[400,165],type:"mid",weight:3},{from:[250,220],to:[250,80],type:"layup",weight:6}],
+      defZones:[{cx:250,cy:120,r:55,intensity:0.4,type:0},{cx:150,cy:80,r:40,intensity:0.2,type:2},{cx:350,cy:80,r:40,intensity:0.2,type:2}],
+      defFgAgainst:"38.2%", defContests:4.8, deflections:1.2, steals:1.4, chargesDrawn:0.3,
+      dai:8.7, daiSub:"Elite nível guard",
+      ocs:62.4, ptsCreated:48.2, ptsOwn:29.4, ptsAst:18.8,
+      gravIdx:94, gravDouble:"72%",
+      pir:8.9, tovPress:1.2, tovDrive:0.5, tovPnr:0.7, tovRate:"9.8%",
+      netOn:"+12.4", netOff:"-4.2", netOnNum:12.4, netOffNum:-4.2,
+      onOffMetrics:[{label:"Offensive Rtg",on:118.4,off:108.2,max:120},{label:"Defensive Rtg",on:108.8,off:116.6,max:120,invert:true},{label:"Pace",on:101.2,off:98.8,max:110},{label:"TS%",on:62.8,off:55.4,max:70},{label:"AST Ratio",on:22.4,off:17.6,max:30}],
+      usage:"24.2%", offRtg:"118.4", defRtg:"108.8", pace:"101.2",
+      ddi:6.8, ddiSub:"Boa disrupção p/ ala",
+      lineups:[
+        {players:["SC","KT","D.Green","A.Wiggins","K.Looney"],rating:"+19.2",color:"#FFC72C",mins:380},
+        {players:["SC","KT","J.Kuminga"],rating:"+14.8",color:"#FFC72C",mins:210},
+        {players:["SC","D.Green","C.Paul"],rating:"+11.3",color:"#FFC72C",mins:175},
+      ],
+      gravDefenders:[{cx:178,cy:165,dist:"0.9m"},{cx:315,cy:175,dist:"1.2m"},{cx:250,cy:140,dist:"0.7m"}],
+    },
+  },
+  { id:1, name:"Luka Doncic",       initials:"LD", team:"LAL", teamFull:"LAL · #77", color:"#9B59FF", colorHex:0x552583,
+    stats:{att:748,made:278,pct:37.2,avg:4.3},
+    zones:[{name:"Corner E",pct:34,made:22,att:65},{name:"Corner D",pct:38,made:25,att:66},{name:"Ângulo E",pct:35,made:55,att:157},{name:"Ângulo D",pct:36,made:58,att:161},{name:"Topo Arco",pct:39,made:118,att:302}],
+    vsLeague:[{label:"3P%",player:"37.2%",league:"36.1%",better:true},{label:"3PM/g",player:"4.3",league:"2.4",better:true},{label:"3PA/g",player:"11.5",league:"6.6",better:true},{label:"Dist.",player:"25.4ft",league:"23.8ft",better:true}],
+    shots3:[[-0.7,0.3],[-0.5,0.5],[-0.2,0.85],[0,0.9],[0.3,0.8],[0.65,0.5],[0.85,0.25],[-0.85,-0.05],[0.85,-0.1],[-0.4,0.7],[0.4,0.65]],
+    shotsMid:[[-0.35,0.42],[0.25,0.45],[-0.15,0.5],[0.3,0.4],[0,0.48]],
+    shotsFloat:[[0,0.28],[-0.12,0.22],[0.12,0.25]],
+    shotsPull:[[-0.35,0.5],[0.3,0.5],[0,0.58],[-0.5,0.38],[0.5,0.38]],
+    shotsStep:[[-0.5,0.58],[0.5,0.58],[0,0.72]],
+    shotsCatch:[[-0.8,0.04],[0.8,0.04],[-0.62,0.42],[0.62,0.42],[0,0.9]],
+    shotsLayup:[[-0.08,0.06],[0.12,0.04],[0,0.08]],
+    shotsCross:[[-0.28,0.44],[0.28,0.44],[0,0.52]],
+    adv:{
+      xast:9.4, xastSub:"Top 5 liga — armador criativo",
+      astTypes:[{label:"Layup/Dunk",pct:42,color:"var(--green)"},{label:"3 Pontos",pct:28,color:"var(--acc)"},{label:"Mid-Range",pct:30,color:"var(--blue)"}],
+      potAst:16.8, potConv:"56%",
+      drives:14.8, driveFg:"51.2%", drivePass:"4.8/g", driveFoul:"3.2/g", driveDrib:"5.6", driveTop:"6.8s",
+      drivePaths:[[250,260,165,65],[190,275,185,75],[290,265,210,58],[160,280,150,65],[300,260,190,55],[240,280,155,70]],
+      passArrows:[{from:[250,230],to:[245,50],type:"layup",weight:6},{from:[250,230],to:[40,40],type:"3pt",weight:3},{from:[250,230],to:[460,40],type:"3pt",weight:3},{from:[250,230],to:[95,180],type:"mid",weight:5},{from:[250,230],to:[405,180],type:"mid",weight:5},{from:[250,230],to:[250,70],type:"layup",weight:5}],
+      defZones:[{cx:250,cy:130,r:50,intensity:0.25,type:1},{cx:160,cy:90,r:35,intensity:0.35,type:0},{cx:340,cy:90,r:35,intensity:0.35,type:0}],
+      defFgAgainst:"48.6%", defContests:2.1, deflections:0.8, steals:1.1, chargesDrawn:0.1,
+      dai:4.2, daiSub:"Abaixo da média — foca no ataque",
+      ocs:71.8, ptsCreated:56.4, ptsOwn:34.2, ptsAst:22.2,
+      gravIdx:88, gravDouble:"63%",
+      pir:7.6, tovPress:2.8, tovDrive:1.2, tovPnr:1.6, tovRate:"14.2%",
+      netOn:"+8.6", netOff:"-6.8", netOnNum:8.6, netOffNum:-6.8,
+      onOffMetrics:[{label:"Offensive Rtg",on:116.2,off:104.8,max:120},{label:"Defensive Rtg",on:112.4,off:114.8,max:120,invert:true},{label:"Pace",on:100.4,off:97.2,max:110},{label:"TS%",on:60.4,off:54.8,max:70},{label:"AST Ratio",on:28.4,off:19.2,max:30}],
+      usage:"37.8%", offRtg:"116.2", defRtg:"112.4", pace:"100.4",
+      ddi:3.8, ddiSub:"Fraco defensor — seletivo",
+      lineups:[{players:["LD","A.Davis","A.Reaves"],rating:"+15.6",color:"#552583",mins:290},{players:["LD","K.Caldwell-Pope","T.Prince"],rating:"+10.2",color:"#552583",mins:180}],
+      gravDefenders:[{cx:192,cy:178,dist:"1.1m"},{cx:308,cy:178,dist:"1.1m"},{cx:250,cy:150,dist:"0.8m"}],
+    },
+  },
+  { id:2, name:"Jayson Tatum",      initials:"JT", team:"BOS", teamFull:"BOS · #0",  color:"#3ECF8E", colorHex:0x007A33,
+    stats:{att:618,made:240,pct:38.8,avg:3.6},
+    zones:[{name:"Corner E",pct:41,made:30,att:73},{name:"Corner D",pct:43,made:31,att:72},{name:"Ângulo E",pct:37,made:48,att:130},{name:"Ângulo D",pct:38,made:46,att:121},{name:"Topo Arco",pct:39,made:85,att:222}],
+    vsLeague:[{label:"3P%",player:"38.8%",league:"36.1%",better:true},{label:"3PM/g",player:"3.6",league:"2.4",better:true},{label:"3PA/g",player:"9.2",league:"6.6",better:true},{label:"Dist.",player:"24.9ft",league:"23.8ft",better:true}],
+    shots3:[[-0.75,0.28],[-0.5,0.52],[-0.1,0.88],[0.05,0.91],[0.38,0.77],[0.62,0.48],[0.8,0.27],[-0.88,0],[0.9,0.02]],
+    shotsMid:[[-0.28,0.44],[0.32,0.43],[-0.18,0.52],[0.22,0.5],[0,0.47]],
+    shotsFloat:[[0,0.26],[-0.1,0.21],[0.1,0.24]],
+    shotsPull:[[-0.3,0.48],[0.28,0.48],[0,0.56]],
+    shotsStep:[[-0.45,0.6],[0.42,0.58]],
+    shotsCatch:[[-0.78,0.06],[0.78,0.05],[-0.6,0.45],[0.6,0.42],[0,0.88]],
+    shotsLayup:[[-0.06,0.07],[0.09,0.05],[0,0.09]],
+    shotsCross:[[-0.22,0.45],[0.24,0.44]],
+    adv:{
+      xast:7.2, xastSub:"Criação qualificada — ala scorer",
+      astTypes:[{label:"Layup/Dunk",pct:45,color:"var(--green)"},{label:"3 Pontos",pct:32,color:"var(--acc)"},{label:"Mid-Range",pct:23,color:"var(--blue)"}],
+      potAst:12.4, potConv:"58%",
+      drives:9.4, driveFg:"53.8%", drivePass:"2.8/g", driveFoul:"2.4/g", driveDrib:"3.8", driveTop:"5.1s",
+      drivePaths:[[250,260,180,60],[220,270,195,65],[275,265,185,58]],
+      passArrows:[{from:[250,230],to:[250,52],type:"layup",weight:5},{from:[250,230],to:[42,38],type:"3pt",weight:3},{from:[250,230],to:[458,38],type:"3pt",weight:3},{from:[250,230],to:[130,160],type:"mid",weight:4},{from:[250,230],to:[370,160],type:"mid",weight:4}],
+      defZones:[{cx:250,cy:125,r:52,intensity:0.38,type:2},{cx:145,cy:82,r:38,intensity:0.28,type:0}],
+      defFgAgainst:"44.2%", defContests:3.6, deflections:1.0, steals:0.9, chargesDrawn:0.2,
+      dai:6.2, daiSub:"Bom defensor — acima da média",
+      ocs:58.8, ptsCreated:44.2, ptsOwn:30.4, ptsAst:13.8,
+      gravIdx:78, gravDouble:"52%",
+      pir:7.4, tovPress:1.8, tovDrive:0.7, tovPnr:0.9, tovRate:"11.4%",
+      netOn:"+10.2", netOff:"-7.4", netOnNum:10.2, netOffNum:-7.4,
+      onOffMetrics:[{label:"Offensive Rtg",on:117.8,off:106.4,max:120},{label:"Defensive Rtg",on:107.6,off:116.2,max:120,invert:true},{label:"Pace",on:99.8,off:97.4,max:110},{label:"TS%",on:61.2,off:54.6,max:70},{label:"AST Ratio",on:18.6,off:14.8,max:30}],
+      usage:"31.4%", offRtg:"117.8", defRtg:"107.6", pace:"99.8",
+      ddi:7.4, ddiSub:"Forte defensor perimetral",
+      lineups:[{players:["JT","J.Brown","K.Porzingis"],rating:"+18.4",color:"#007A33",mins:320},{players:["JT","D.White","A.Horford"],rating:"+12.6",color:"#007A33",mins:240}],
+      gravDefenders:[{cx:200,cy:172,dist:"1.3m"},{cx:300,cy:172,dist:"1.3m"}],
+    },
+  },
+  { id:3, name:"Damian Lillard",    initials:"DL", team:"MIL", teamFull:"MIL · #0",  color:"#4ADE80", colorHex:0x00471B,
+    stats:{att:714,made:265,pct:37.1,avg:3.9},
+    zones:[{name:"Corner E",pct:32,made:18,att:56},{name:"Corner D",pct:35,made:20,att:57},{name:"Ângulo E",pct:35,made:51,att:146},{name:"Ângulo D",pct:36,made:53,att:147},{name:"Topo Arco",pct:38,made:123,att:324}],
+    vsLeague:[{label:"3P%",player:"37.1%",league:"36.1%",better:true},{label:"3PM/g",player:"3.9",league:"2.4",better:true},{label:"3PA/g",player:"10.5",league:"6.6",better:true},{label:"Dist.",player:"27.2ft",league:"23.8ft",better:true}],
+    shots3:[[-0.82,0.32],[-0.58,0.54],[-0.28,0.86],[0.02,0.92],[0.35,0.82],[0.6,0.52],[0.82,0.3],[-0.87,-0.02],[0.88,0]],
+    shotsMid:[[-0.32,0.45],[0.28,0.46],[0,0.5],[-0.42,0.32],[0.42,0.33]],
+    shotsFloat:[[0,0.27],[-.1,0.22],[.1,0.25]],
+    shotsPull:[[-0.38,0.5],[0.36,0.5],[0,0.62]],
+    shotsStep:[[-0.5,0.62],[0.5,0.62],[0,0.75]],
+    shotsCatch:[[-0.82,0.05],[0.82,0.05],[0,0.9]],
+    shotsLayup:[[-0.07,0.07],[0.08,0.05]],
+    shotsCross:[[-0.3,0.46],[0.3,0.46]],
+    adv:{
+      xast:8.8, xastSub:"Especialista em criar do logo",
+      astTypes:[{label:"Layup/Dunk",pct:35,color:"var(--green)"},{label:"3 Pontos",pct:42,color:"var(--acc)"},{label:"Mid-Range",pct:23,color:"var(--blue)"}],
+      potAst:14.2, potConv:"62%",
+      drives:11.2, driveFg:"49.4%", drivePass:"3.6/g", driveFoul:"2.8/g", driveDrib:"4.4", driveTop:"5.8s",
+      drivePaths:[[250,265,175,62],[210,270,195,68],[285,262,185,60],[240,275,165,58]],
+      passArrows:[{from:[250,235],to:[248,52],type:"layup",weight:4},{from:[250,235],to:[38,35],type:"3pt",weight:5},{from:[250,235],to:[462,35],type:"3pt",weight:5},{from:[250,235],to:[108,155],type:"mid",weight:3},{from:[250,235],to:[392,155],type:"mid",weight:3}],
+      defZones:[{cx:250,cy:130,r:48,intensity:0.22,type:1},{cx:165,cy:88,r:32,intensity:0.28,type:1}],
+      defFgAgainst:"50.2%", defContests:1.8, deflections:0.6, steals:0.8, chargesDrawn:0.1,
+      dai:3.4, daiSub:"Abaixo da média — limitações físicas",
+      ocs:55.6, ptsCreated:42.8, ptsOwn:29.8, ptsAst:13.0,
+      gravIdx:82, gravDouble:"58%",
+      pir:7.1, tovPress:2.2, tovDrive:0.8, tovPnr:1.0, tovRate:"13.1%",
+      netOn:"+6.4", netOff:"-5.2", netOnNum:6.4, netOffNum:-5.2,
+      onOffMetrics:[{label:"Offensive Rtg",on:115.4,off:106.8,max:120},{label:"Defensive Rtg",on:114.2,off:116.4,max:120,invert:true},{label:"Pace",on:100.2,off:98.4,max:110},{label:"TS%",on:59.8,off:55.2,max:70},{label:"AST Ratio",on:24.8,off:16.4,max:30}],
+      usage:"32.6%", offRtg:"115.4", defRtg:"114.2", pace:"100.2",
+      ddi:3.2, ddiSub:"Déficit defensivo perimetral",
+      lineups:[{players:["DL","G.Antetokounmpo","B.Middleton"],rating:"+12.8",color:"#00471B",mins:260},{players:["DL","K.Portis","P.Beverley"],rating:"+7.4",color:"#00471B",mins:145}],
+      gravDefenders:[{cx:188,cy:175,dist:"1.2m"},{cx:312,cy:175,dist:"1.2m"},{cx:250,cy:155,dist:"0.9m"}],
+    },
+  },
+  { id:4, name:"Klay Thompson",     initials:"KT", team:"DAL", teamFull:"DAL · #31", color:"#4A90D9", colorHex:0x00538C,
+    stats:{att:762,made:298,pct:39.1,avg:4.2},
+    zones:[{name:"Corner E",pct:46,made:45,att:98},{name:"Corner D",pct:48,made:47,att:98},{name:"Ângulo E",pct:38,made:56,att:147},{name:"Ângulo D",pct:39,made:55,att:141},{name:"Topo Arco",pct:39,made:95,att:244}],
+    vsLeague:[{label:"3P%",player:"39.1%",league:"36.1%",better:true},{label:"3PM/g",player:"4.2",league:"2.4",better:true},{label:"3PA/g",player:"10.7",league:"6.6",better:true},{label:"Dist.",player:"24.5ft",league:"23.8ft",better:true}],
+    shots3:[[-0.72,0.25],[-0.52,0.5],[-0.15,0.87],[0,0.93],[0.32,0.81],[0.58,0.52],[0.78,0.28],[-0.9,0.05],[0.88,0.04]],
+    shotsMid:[[-0.3,0.44],[0.32,0.45],[-0.2,0.5],[0.2,0.48]],
+    shotsFloat:[[0,0.26],[-.08,0.22],[.08,0.24]],
+    shotsPull:[[-0.3,0.46],[0.3,0.46],[0,0.54]],
+    shotsStep:[[-0.45,0.58],[0.45,0.58]],
+    shotsCatch:[[-0.88,0.04],[0.88,0.04],[-0.7,0.38],[0.7,0.38],[0,0.9]],
+    shotsLayup:[[-0.05,0.06],[0.07,0.06],[0,0.1]],
+    shotsCross:[[-0.25,0.44],[0.25,0.44]],
+    adv:{
+      xast:3.8, xastSub:"Finalizador — baixa criação primária",
+      astTypes:[{label:"Layup/Dunk",pct:28,color:"var(--green)"},{label:"3 Pontos",pct:52,color:"var(--acc)"},{label:"Mid-Range",pct:20,color:"var(--blue)"}],
+      potAst:7.2, potConv:"53%",
+      drives:4.8, driveFg:"44.6%", drivePass:"1.4/g", driveFoul:"1.2/g", driveDrib:"2.4", driveTop:"2.8s",
+      drivePaths:[[250,258,185,60],[265,262,192,55]],
+      passArrows:[{from:[250,228],to:[248,55],type:"layup",weight:3},{from:[250,228],to:[42,36],type:"3pt",weight:4},{from:[250,228],to:[458,36],type:"3pt",weight:4},{from:[250,228],to:[138,150],type:"mid",weight:2}],
+      defZones:[{cx:250,cy:118,r:54,intensity:0.42,type:2},{cx:148,cy:78,r:44,intensity:0.38,type:2}],
+      defFgAgainst:"41.8%", defContests:4.2, deflections:1.1, steals:0.8, chargesDrawn:0.1,
+      dai:6.8, daiSub:"Bom defensor perimetral",
+      ocs:38.4, ptsCreated:28.8, ptsOwn:24.6, ptsAst:4.2,
+      gravIdx:72, gravDouble:"48%",
+      pir:5.4, tovPress:0.8, tovDrive:0.3, tovPnr:0.4, tovRate:"8.2%",
+      netOn:"+9.4", netOff:"-3.8", netOnNum:9.4, netOffNum:-3.8,
+      onOffMetrics:[{label:"Offensive Rtg",on:116.4,off:108.6,max:120},{label:"Defensive Rtg",on:109.4,off:114.8,max:120,invert:true},{label:"Pace",on:100.8,off:98.2,max:110},{label:"TS%",on:58.4,off:54.2,max:70},{label:"AST Ratio",on:14.8,off:14.2,max:30}],
+      usage:"19.8%", offRtg:"116.4", defRtg:"109.4", pace:"100.8",
+      ddi:7.2, ddiSub:"Acima da média — especialista",
+      lineups:[{players:["KT","L.Doncic","A.Davis"],rating:"+14.2",color:"#00538C",mins:240},{players:["KT","D.Jones","D.Gafford"],rating:"+9.6",color:"#00538C",mins:160}],
+      gravDefenders:[{cx:205,cy:180,dist:"1.6m"},{cx:295,cy:180,dist:"1.6m"}],
+    },
+  },
+  { id:5, name:"Tyrese Haliburton",  initials:"TH", team:"IND", teamFull:"IND · #0",  color:"#FDBC30", colorHex:0xFDBC30,
+    stats:{att:590,made:257,pct:43.6,avg:3.7},
+    zones:[{name:"Corner E",pct:45,made:32,att:71},{name:"Corner D",pct:46,made:33,att:72},{name:"Ângulo E",pct:42,made:55,att:131},{name:"Ângulo D",pct:43,made:56,att:130},{name:"Topo Arco",pct:44,made:81,att:184}],
+    vsLeague:[{label:"3P%",player:"43.6%",league:"36.1%",better:true},{label:"3PM/g",player:"3.7",league:"2.4",better:true},{label:"3PA/g",player:"8.6",league:"6.6",better:true},{label:"Dist.",player:"24.1ft",league:"23.8ft",better:true}],
+    shots3:[[-0.68,0.3],[-0.5,0.55],[-0.1,0.9],[0.05,0.92],[0.4,0.8],[0.6,0.5],[0.75,0.28],[-0.85,0.02],[0.86,0]],
+    shotsMid:[[-0.28,0.43],[0.3,0.44],[-0.1,0.5],[0.15,0.48]],
+    shotsFloat:[[0,0.27],[-.1,0.22],[.1,0.24]],
+    shotsPull:[[-0.28,0.46],[0.28,0.46],[0,0.54]],
+    shotsStep:[[-0.42,0.56],[0.42,0.56]],
+    shotsCatch:[[-0.82,0.03],[0.82,0.03],[0,0.9]],
+    shotsLayup:[[-0.06,0.08],[0.08,0.07]],
+    shotsCross:[[-0.22,0.44],[0.22,0.44]],
+    adv:{
+      xast:10.6, xastSub:"Top 3 liga — armador puro playmaker",
+      astTypes:[{label:"Layup/Dunk",pct:40,color:"var(--green)"},{label:"3 Pontos",pct:38,color:"var(--acc)"},{label:"Mid-Range",pct:22,color:"var(--blue)"}],
+      potAst:17.6, potConv:"60%",
+      drives:10.4, driveFg:"52.4%", drivePass:"4.2/g", driveFoul:"2.6/g", driveDrib:"4.0", driveTop:"5.4s",
+      drivePaths:[[250,260,175,65],[220,265,188,62],[280,268,180,58],[245,272,170,60]],
+      passArrows:[{from:[250,225],to:[248,50],type:"layup",weight:5},{from:[250,225],to:[40,32],type:"3pt",weight:4},{from:[250,225],to:[460,32],type:"3pt",weight:4},{from:[250,225],to:[100,162],type:"mid",weight:4},{from:[250,225],to:[400,162],type:"mid",weight:4},{from:[250,225],to:[250,75],type:"layup",weight:4}],
+      defZones:[{cx:250,cy:122,r:50,intensity:0.3,type:0},{cx:152,cy:84,r:36,intensity:0.22,type:2}],
+      defFgAgainst:"43.8%", defContests:3.2, deflections:1.4, steals:1.6, chargesDrawn:0.3,
+      dai:7.6, daiSub:"Bom — destaque em steals",
+      ocs:52.4, ptsCreated:40.6, ptsOwn:22.8, ptsAst:17.8,
+      gravIdx:76, gravDouble:"50%",
+      pir:8.2, tovPress:1.6, tovDrive:0.6, tovPnr:0.8, tovRate:"10.4%",
+      netOn:"+11.8", netOff:"-5.6", netOnNum:11.8, netOffNum:-5.6,
+      onOffMetrics:[{label:"Offensive Rtg",on:117.2,off:106.2,max:120},{label:"Defensive Rtg",on:110.4,off:115.8,max:120,invert:true},{label:"Pace",on:102.4,off:99.6,max:110},{label:"TS%",on:60.8,off:54.4,max:70},{label:"AST Ratio",on:26.4,off:18.2,max:30}],
+      usage:"27.2%", offRtg:"117.2", defRtg:"110.4", pace:"102.4",
+      ddi:5.8, daiSub:"Acima da média",
+      lineups:[{players:["TH","P.Siakam","M.Turner"],rating:"+16.4",color:"#FDBC30",mins:300},{players:["TH","A.Nembhard","B.Hield"],rating:"+11.8",color:"#FDBC30",mins:185}],
+      gravDefenders:[{cx:195,cy:175,dist:"1.4m"},{cx:305,cy:175,dist:"1.4m"},{cx:250,cy:148,dist:"0.9m"}],
+    },
+  },
+];
+
+const STAT_MAP = {
+  '3pt':       { key:'shots3',     label:'3 Pontos'   },
+  'mid':       { key:'shotsMid',   label:'Mid-Range'  },
+  'floater':   { key:'shotsFloat', label:'Floater'    },
+  'pullup':    { key:'shotsPull',  label:'Pull-up'    },
+  'stepback':  { key:'shotsStep',  label:'Stepback'   },
+  'catchshoot':{ key:'shotsCatch', label:'Catch&Shoot'},
+  'layup':     { key:'shotsLayup', label:'Layup/Dunk' },
+  'crossover': { key:'shotsCross', label:'Crossover'  },
+};
+
+const TEAMS_ONBOARD = [
+  {abbr:"BOS",city:"Boston",     color:"#007A33"},{abbr:"GSW",city:"Golden St",  color:"#FFC72C"},
+  {abbr:"LAL",city:"L.A. Lakers",color:"#552583"},{abbr:"MIL",city:"Milwaukee",  color:"#00471B"},
+  {abbr:"DAL",city:"Dallas",     color:"#00538C"},{abbr:"PHX",city:"Phoenix",    color:"#E56020"},
+  {abbr:"DEN",city:"Denver",     color:"#0E2240"},{abbr:"MIA",city:"Miami",      color:"#98002E"},
+  {abbr:"NYK",city:"New York",   color:"#F58426"},{abbr:"CHI",city:"Chicago",    color:"#CE1141"},
+  {abbr:"BKN",city:"Brooklyn",   color:"#888888"},{abbr:"CLE",city:"Cleveland",  color:"#860038"},
+  {abbr:"SAS",city:"San Antonio",color:"#C4CED4"},{abbr:"ORL",city:"Orlando",    color:"#0077C0"},
+  {abbr:"ATL",city:"Atlanta",    color:"#E03A3E"},
+];
+
+/* ══════════════════════════════════════════
+   API
+══════════════════════════════════════════ */
+const API = 'http://localhost:8080/api/v1';
+let authToken = null;
+let loggedUser = null;
+
+async function apiPost(path, body) {
+  const res = await fetch(API + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erro desconhecido');
+  return data;
+}
+
+async function apiGet(path) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  const res = await fetch(API + path, { headers });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erro desconhecido');
+  return data;
+}
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let currentPlayer   = PLAYERS[0];
+let currentStatKey  = '3pt';
+let filteredPlayers = [...PLAYERS];
+let heatmapOn       = false;
+
+/* ══════════════════════════════════════════
+   VIEW NAVIGATION
+══════════════════════════════════════════ */
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function openLogin()  { document.getElementById('modal-login').classList.add('open'); }
+function closeLogin() { document.getElementById('modal-login').classList.remove('open'); }
+
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  if (!email || !password) {
+    errEl.textContent = 'Preencha e-mail e senha.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const data = await apiPost('/auth/login', { email, password });
+    authToken  = data.token;
+    loggedUser = data.user;
+    closeLogin();
+    showView('view-onboarding');
+    buildTeamsGrid();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function doRegister() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  if (!email || !password) {
+    errEl.textContent = 'Preencha e-mail e senha.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const data = await apiPost('/auth/register', { email, password });
+    authToken  = data.token;
+    loggedUser = data.user;
+    closeLogin();
+    showView('view-onboarding');
+    buildTeamsGrid();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  }
+}
+
+function goToApp() {
+  showView('view-app');
+  if (loggedUser) {
+    const initials = loggedUser.email.substring(0, 2).toUpperCase();
+    const nameEl  = document.getElementById('user-name');
+    const emailEl = document.getElementById('user-email');
+    const avatarEl = document.getElementById('user-av');
+    if (nameEl)  nameEl.textContent  = loggedUser.email.split('@')[0];
+    if (emailEl) emailEl.textContent = loggedUser.email;
+    if (avatarEl) avatarEl.textContent = initials;
+  }
+  renderPlayerList();
+  renderStats();
+  Object.values({shotchart:'shotchart-layout',drives:'page-drives',defense:'page-defense',advanced:'page-advanced',onoff:'page-onoff'})
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  currentPage = '';
+  // carrega lista completa da NBA em background
+  loadNBAPlayers();
+}
+document.getElementById('modal-login').addEventListener('click', e => { if(e.target===e.currentTarget) closeLogin(); });
+
+/* ══════════════════════════════════════════
+   ONBOARDING
+══════════════════════════════════════════ */
+function buildTeamsGrid() {
+  const g = document.getElementById('teams-grid');
+  g.innerHTML = '';
+  TEAMS_ONBOARD.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'team-card';
+    el.innerHTML = `<div class="team-card-color" style="background:${t.color}"></div><div class="team-card-abbr">${t.abbr}</div><div class="team-card-city">${t.city}</div>`;
+    el.addEventListener('click', () => el.classList.toggle('selected'));
+    g.appendChild(el);
+  });
+}
+
+/* ══════════════════════════════════════════
+   PLAYER LIST
+══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   PLAYER SEARCH — direto da NBA via browser
+══════════════════════════════════════════ */
+let allNBAPlayers = [];   // cache local da lista completa
+let searchTimer   = null;
+
+async function loadNBAPlayers() {
+  if (allNBAPlayers.length > 0) return; // já carregado
+
+  const container = document.getElementById('player-results');
+  container.innerHTML = '<div style="padding:12px;color:var(--muted);font-family:var(--font-m);font-size:11px;letter-spacing:1px">carregando jogadores...</div>';
+
+  try {
+    const res = await fetch(
+      'https://stats.nba.com/stats/commonallplayers?LeagueID=00&Season=2025-26&IsOnlyCurrentSeason=1',
+      { headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'Referer': 'https://www.nba.com/',
+          'x-nba-stats-origin': 'stats',
+          'x-nba-stats-token': 'true',
+      }}
+    );
+    const data = await res.json();
+    const rs   = data.resultSets[0];
+    const idx  = {};
+    rs.headers.forEach((h, i) => idx[h] = i);
+
+    allNBAPlayers = rs.rowSet.map(row => ({
+      id:       row[idx['PERSON_ID']],
+      name:     row[idx['DISPLAY_FIRST_LAST']],
+      team:     row[idx['TEAM_ABBREVIATION']] || 'FA',
+      teamFull: row[idx['TEAM_CITY']] + ' ' + row[idx['TEAM_NAME']],
+      initials: row[idx['DISPLAY_FIRST_LAST']].split(' ').map(w=>w[0]).join('').substring(0,2),
+      color:    '#FF6B35',
+      // stats mockados até conectar endpoint real
+      stats:    { att:0, made:0, pct:0, avg:0 },
+      zones:    [],
+      vsLeague: [],
+      shots3:[], shotsMid:[], shotsFloat:[], shotsPull:[],
+      shotsStep:[], shotsCatch:[], shotsLayup:[], shotsCross:[],
+    }));
+
+    renderPlayerList();
+  } catch(e) {
+    container.innerHTML = '<div style="padding:12px;color:var(--red);font-size:12px">Erro ao carregar jogadores. Verifique sua conexão.</div>';
+  }
+}
+
+function filterPlayers(q) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    const query = q.trim().toLowerCase();
+    if (query.length === 0) {
+      filteredPlayers = allNBAPlayers.slice(0, 20);
+    } else {
+      filteredPlayers = allNBAPlayers.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.team.toLowerCase().includes(query)
+      ).slice(0, 20);
+    }
+    renderPlayerList();
+  }, 250);
+}
+
+function renderPlayerList() {
+  const container = document.getElementById('player-results');
+  container.innerHTML = '';
+  const list = filteredPlayers.length > 0 ? filteredPlayers : allNBAPlayers.slice(0, 20);
+  list.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'player-result' + (p.id === currentPlayer.id ? ' selected' : '');
+    el.innerHTML = `
+      <div class="pr-init" style="background:${p.color}22;color:${p.color}">${p.initials}</div>
+      <div><div class="pr-name">${p.name}</div><div class="pr-team">${p.team}</div></div>
+      <div class="pr-stat">${p.stats.made} 3PM</div>`;
+    el.addEventListener('click', () => { currentPlayer = p; renderAll(); });
+    container.appendChild(el);
+  });
+}
+
+/* ══════════════════════════════════════════
+   STAT SELECT
+══════════════════════════════════════════ */
+function selectStat(el, key) {
+  document.querySelectorAll('.stat-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  currentStatKey = key;
+  const label = STAT_MAP[key]?.label || key;
+  document.getElementById('ss-stat-name').textContent = label;
+  renderCourt2D();
+}
+
+/* ══════════════════════════════════════════
+   STATS PANEL
+══════════════════════════════════════════ */
+function renderStats() {
+  const p = currentPlayer;
+  document.getElementById('sf-att').textContent  = p.stats.att;
+  document.getElementById('sf-made').textContent = p.stats.made;
+  document.getElementById('sf-pct').textContent  = p.stats.pct + '%';
+  document.getElementById('sf-avg').textContent  = p.stats.avg;
+  document.getElementById('co-player').textContent = p.name.toUpperCase();
+  document.getElementById('co-team').textContent   = p.teamFull;
+
+  const zb = document.getElementById('zone-breakdown');
+  zb.innerHTML = '';
+  p.zones.forEach(z => {
+    const row = document.createElement('div');
+    row.className = 'zone-row';
+    row.innerHTML = `<div class="zone-name">${z.name}</div><div class="zone-bar-bg"><div class="zone-bar-fill" data-w="${z.pct}" style="width:0%;background:var(--acc)"></div></div><div class="zone-pct">${z.pct}%</div>`;
+    zb.appendChild(row);
+  });
+  setTimeout(() => { zb.querySelectorAll('.zone-bar-fill').forEach(el => { el.style.width = el.dataset.w + '%'; }); }, 120);
+
+  const cb = document.getElementById('comp-body');
+  cb.innerHTML = '';
+  p.vsLeague.forEach(row => {
+    const el = document.createElement('div');
+    el.className = 'comp-row';
+    el.innerHTML = `
+      <div class="comp-label">${row.label}</div>
+      <div class="comp-vals">
+        <div class="comp-val ${row.better?'better':'worse'}">${row.player}<span class="comp-val-name">${p.name.split(' ')[1]}</span></div>
+        <div class="comp-val">${row.league}<span class="comp-val-name">Liga</span></div>
+      </div>`;
+    cb.appendChild(el);
+  });
+  document.querySelectorAll('.player-result').forEach((el,i) => {
+    el.classList.toggle('selected', filteredPlayers[i]?.id === p.id);
+  });
+}
+
+function renderAll() {
+  renderPlayerList();
+  renderStats();
+  if(currentPage==='shotchart') renderCourt2D();
+  if(currentPage==='drives')   renderDrivesPage();
+  if(currentPage==='defense')  renderDefensePage();
+  if(currentPage==='advanced') renderAdvancedPage();
+  if(currentPage==='onoff')    renderOnOffPage();
+}
+
+/* ══════════════════════════════════════════
+   PAGE SWITCHING
+══════════════════════════════════════════ */
+let currentPage = '';
+const PAGES = {
+  shotchart:'shotchart-layout', drives:'page-drives',
+  defense:'page-defense', advanced:'page-advanced', onoff:'page-onoff',
+};
+const PAGE_TITLES = {
+  shotchart:'QUADRA 2D', drives:'DRIVES & PASSES',
+  defense:'DEFESA', advanced:'MÉTRICAS AVANÇADAS', onoff:'ON/OFF COURT',
+};
+
+function switchPage(name, navEl) {
+  currentPage = name;
+  Object.entries(PAGES).forEach(([k,id]) => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = k===name ? (k==='shotchart'?'grid':'block') : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if(navEl) navEl.classList.add('active');
+  document.getElementById('page-title').textContent = PAGE_TITLES[name]||name.toUpperCase();
+  if(name==='shotchart') renderCourt2D();
+  if(name==='drives')    renderDrivesPage();
+  if(name==='defense')   renderDefensePage();
+  if(name==='advanced')  renderAdvancedPage();
+  if(name==='onoff')     renderOnOffPage();
+}
+
+/* ══════════════════════════════════════════
+   2D COURT — SHOT GENERATOR
+══════════════════════════════════════════ */
+/* Court viewBox: 500×470. Basket at (250,52). */
+/* Coordinate mapping from normalised [-1..1, 0..1] player data */
+/* x: 250 + nx*220,  y: 52 + ny*380  (ny=0 → basket, ny=1 → half-court) */
+
+function seededRng(seed){
+  let s = seed;
+  return () => { s=(s*16807)%2147483647; return (s-1)/2147483646; };
+}
+
+function genShots2D(player, statKey) {
+  const stat   = STAT_MAP[statKey] || STAT_MAP['3pt'];
+  const posArr = player[stat.key] || player.shots3;
+  const pct    = player.stats.pct / 100;
+  const rng    = seededRng(player.id * 131 + statKey.charCodeAt(0) * 17);
+  const shots  = [];
+
+  posArr.forEach((pos, i) => {
+    const variants = i < 5 ? 4 : 3;
+    for(let v = 0; v < variants; v++) {
+      const nx = pos[0] + (rng() - 0.5) * 0.18;
+      const ny = pos[1] + (rng() - 0.5) * 0.14;
+      const cx = 250 + nx * 220;
+      const cy = 52  + ny * 380;
+      const made = rng() < pct + (rng() - 0.5) * 0.12;
+      shots.push({ cx, cy, made, idx: shots.length });
+    }
+  });
+  return shots;
+}
+
+/* Zone definitions for heatmap */
+const ZONES_DEF = [
+  { id:'corner_l', cx:55,  cy:75,  r:68,  label:'Corner E' },
+  { id:'corner_r', cx:445, cy:75,  r:68,  label:'Corner D' },
+  { id:'wing_l',   cx:105, cy:195, r:75,  label:'Ângulo E' },
+  { id:'wing_r',   cx:395, cy:195, r:75,  label:'Ângulo D' },
+  { id:'paint',    cx:250, cy:120, r:80,  label:'Garrafão' },
+  { id:'top',      cx:250, cy:310, r:95,  label:'Topo Arco'},
+  { id:'mid_l',    cx:130, cy:165, r:60,  label:'Mid-Esq.' },
+  { id:'mid_r',    cx:370, cy:165, r:60,  label:'Mid-Dir.' },
+];
+
+function getShotZone(cx, cy) {
+  let best = null, bestD = Infinity;
+  ZONES_DEF.forEach(z => {
+    const d = Math.hypot(cx - z.cx, cy - z.cy);
+    if(d < bestD){ bestD = d; best = z.id; }
+  });
+  return best;
+}
+
+/* ══════════════════════════════════════════
+   2D COURT — RENDER
+══════════════════════════════════════════ */
+let heatmapActive = false;
+
+function toggleHeatmap() {
+  heatmapActive = !heatmapActive;
+  const badge = document.getElementById('heatmap-badge');
+  if(badge) badge.style.display = heatmapActive ? 'block' : 'none';
+  const sl = document.getElementById('shots-layer2d');
+  const hl = document.getElementById('heatmap-layer');
+  if(sl) sl.style.opacity = heatmapActive ? '0.15' : '1';
+  if(hl) { hl.style.opacity = heatmapActive ? '1' : '0'; }
+}
+
+function renderCourt2D() {
+  const layer   = document.getElementById('shots-layer2d');
+  const hlayer  = document.getElementById('heatmap-layer');
+  const tip     = document.getElementById('shot-tip');
+  if(!layer) return;
+
+  const shots   = genShots2D(currentPlayer, currentStatKey);
+  const madeN   = shots.filter(s=>s.made).length;
+
+  document.getElementById('shots-count').textContent = shots.length;
+  const mc = document.getElementById('made-count'); if(mc) mc.textContent = madeN;
+
+  /* ── shot dots ── */
+  layer.innerHTML = '';
+  shots.forEach((s, i) => {
+    const ns   = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const col  = s.made ? '#3ECF8E' : '#E05252';
+    const r    = s.made ? 5.5 : 4.8;
+
+    /* glow ring */
+    const glow = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    glow.setAttribute('cx', s.cx); glow.setAttribute('cy', s.cy);
+    glow.setAttribute('r', r + 3.5);
+    glow.setAttribute('fill', col); glow.setAttribute('opacity', '0');
+    glow.style.transition = 'opacity .15s';
+
+    /* dot */
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx', s.cx); dot.setAttribute('cy', s.cy);
+    dot.setAttribute('r', r);
+    dot.setAttribute('fill', col);
+    dot.setAttribute('opacity', s.made ? '0.82' : '0.62');
+    dot.setAttribute('stroke', col); dot.setAttribute('stroke-width', '0.8');
+    dot.setAttribute('stroke-opacity', '0.4');
+    dot.style.transition = `opacity ${80 + i * 6}ms ease, r .15s`;
+    dot.style.cursor = 'pointer';
+
+    /* hover */
+    ns.addEventListener('mouseenter', e => {
+      glow.setAttribute('opacity', s.made ? '0.2' : '0.15');
+      dot.setAttribute('r', r + 2.5);
+      const zoneLbl = ZONES_DEF.find(z=>z.id===getShotZone(s.cx,s.cy))?.label || '';
+      document.getElementById('tip-result').textContent = s.made ? '✅  CONVERTIDO' : '❌  ERRADO';
+      document.getElementById('tip-result').style.color = s.made ? '#3ECF8E' : '#E05252';
+      document.getElementById('tip-zone').textContent   = `${currentPlayer.name} · ${STAT_MAP[currentStatKey]?.label} · ${zoneLbl}`;
+      tip.classList.add('show');
+    });
+    ns.addEventListener('mousemove', e => {
+      tip.style.left = (e.clientX + 14) + 'px';
+      tip.style.top  = (e.clientY - 54) + 'px';
+    });
+    ns.addEventListener('mouseleave', () => {
+      glow.setAttribute('opacity','0');
+      dot.setAttribute('r', r);
+      tip.classList.remove('show');
+    });
+
+    ns.appendChild(glow); ns.appendChild(dot);
+    /* stagger fade-in */
+    dot.setAttribute('opacity','0');
+    setTimeout(() => dot.setAttribute('opacity', s.made ? '0.82' : '0.62'), 20 + i * 5);
+    layer.appendChild(ns);
+  });
+
+  /* ── heatmap ── */
+  if(!hlayer) return;
+  hlayer.innerHTML = '';
+
+  /* count shots per zone */
+  const zoneCounts = {};
+  ZONES_DEF.forEach(z => { zoneCounts[z.id] = {total:0, made:0}; });
+  shots.forEach(s => {
+    const zid = getShotZone(s.cx, s.cy);
+    if(zoneCounts[zid]){ zoneCounts[zid].total++; if(s.made) zoneCounts[zid].made++; }
+  });
+  const maxCount = Math.max(...Object.values(zoneCounts).map(z=>z.total), 1);
+
+  /* unique gradient IDs per render */
+  const uid = Date.now();
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+
+  ZONES_DEF.forEach((z,i) => {
+    const cnt  = zoneCounts[z.id];
+    const vol  = cnt.total / maxCount;           // 0–1
+    const eff  = cnt.total>0 ? cnt.made/cnt.total : 0; // 0–1
+    if(vol < 0.05) return;
+
+    /* colour: green → yellow → orange → red based on efficiency */
+    const r255 = Math.round(eff < 0.5 ? 255 : 255 * (1 - (eff-0.5)*2));
+    const g255 = Math.round(eff < 0.5 ? 255 * eff * 2 : 255);
+    const hcol = `rgb(${255-r255},${g255},${Math.round(80*(1-eff))})`;
+
+    const gid = `hm_${uid}_${i}`;
+    const grad = document.createElementNS('http://www.w3.org/2000/svg','radialGradient');
+    grad.setAttribute('id',gid); grad.setAttribute('cx','50%'); grad.setAttribute('cy','50%'); grad.setAttribute('r','50%');
+    const s0=document.createElementNS('http://www.w3.org/2000/svg','stop');
+    s0.setAttribute('offset','0%'); s0.setAttribute('stop-color',hcol); s0.setAttribute('stop-opacity',String(0.72*vol));
+    const s1=document.createElementNS('http://www.w3.org/2000/svg','stop');
+    s1.setAttribute('offset','100%'); s1.setAttribute('stop-color',hcol); s1.setAttribute('stop-opacity','0');
+    grad.appendChild(s0); grad.appendChild(s1);
+    defs.appendChild(grad);
+
+    const blob=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    blob.setAttribute('cx',z.cx); blob.setAttribute('cy',z.cy);
+    blob.setAttribute('rx',z.r*1.1); blob.setAttribute('ry',z.r);
+    blob.setAttribute('fill',`url(#${gid})`);
+    hlayer.appendChild(blob);
+
+    /* zone pct label */
+    if(cnt.total>0){
+      const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      txt.setAttribute('x',z.cx); txt.setAttribute('y',z.cy+4);
+      txt.setAttribute('text-anchor','middle');
+      txt.setAttribute('fill','rgba(255,255,255,0.9)');
+      txt.setAttribute('font-size','11');
+      txt.setAttribute('font-family',"'JetBrains Mono',monospace");
+      txt.setAttribute('font-weight','600');
+      txt.textContent=Math.round(eff*100)+'%';
+      hlayer.appendChild(txt);
+    }
+  });
+  hlayer.prepend(defs);
+
+  /* apply current heatmap visibility state */
+  const sl = document.getElementById('shots-layer2d');
+  hlayer.style.opacity  = heatmapActive ? '1' : '0';
+  if(sl) sl.style.opacity = heatmapActive ? '0.15' : '1';
+}
+
+/* helper: mini bar row */
+function miniBar(label,val,max,color,unit=''){
+  const pct=Math.min(100,Math.round((val/max)*100));
+  return `<div class="mini-bar-row"><div class="mini-bar-label">${label}</div><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:0%;background:${color}" data-w="${pct}"></div></div><div class="mini-bar-val" style="color:${color}">${val}${unit}</div></div>`;
+}
+function animBars(container){
+  setTimeout(()=>{container.querySelectorAll('[data-w]').forEach(el=>{el.style.width=el.dataset.w+'%';});},80);
+}
+
+/* ══════════════════════════════════════════
+   PAGE: DRIVES & PASSES
+══════════════════════════════════════════ */
+function renderDrivesPage() {
+  const p = currentPlayer, a = p.adv;
+  // player names
+  document.getElementById('pm-player-name').textContent = p.name.toUpperCase();
+  document.getElementById('pm-player-dot').setAttribute('fill', p.color);
+  document.getElementById('grav-label').textContent = p.initials;
+
+  // pass arrows
+  const arrowColors = {layup:'#3ECF8E','3pt':'#FF6B35',mid:'#4A90D9'};
+  const arrowsG = document.getElementById('pass-arrows');
+  arrowsG.innerHTML = '';
+  a.passArrows.forEach(ar=>{
+    const [fx,fy]=ar.from, [tx,ty]=ar.to;
+    const c=arrowColors[ar.type]||'#888';
+    const mx=(fx+tx)/2+(ty<fy?-30:30), my=(fy+ty)/2-25;
+    // curved path
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${fx},${fy} Q${mx},${my} ${tx},${ty}`);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke',c);
+    path.setAttribute('stroke-width',ar.weight*0.9);
+    path.setAttribute('stroke-opacity','0.7');
+    path.setAttribute('stroke-linecap','round');
+    arrowsG.appendChild(path);
+    // endpoint dot
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',tx); dot.setAttribute('cy',ty);
+    dot.setAttribute('r',ar.weight*0.7+2); dot.setAttribute('fill',c); dot.setAttribute('opacity','0.85');
+    arrowsG.appendChild(dot);
+  });
+
+  // drive arrows
+  const drivesG = document.getElementById('drive-arrows');
+  drivesG.innerHTML = '';
+  (a.drivePaths||[]).forEach((d,i)=>{
+    const [ox,oy,dx,dy]=d;
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${ox},${oy} Q${(ox+dx)/2+20},${(oy+dy)/2-20} ${dx},${dy}`);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke','#9B59FF');
+    path.setAttribute('stroke-width','3');
+    path.setAttribute('stroke-opacity','0.65');
+    path.setAttribute('stroke-linecap','round');
+    path.setAttribute('marker-end','url(#arrowhead)');
+    drivesG.appendChild(path);
+  });
+  // add arrowhead marker if not exists
+  const dsvg=document.getElementById('drive-map-svg');
+  if(!dsvg.querySelector('#arrowhead')){
+    const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+    defs.innerHTML=`<marker id="arrowhead" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><polygon points="0 0,6 3,0 6" fill="#9B59FF" opacity="0.8"/></marker>`;
+    dsvg.prepend(defs);
+  }
+
+  // xAST panel
+  document.getElementById('xast-val').textContent = a.xast;
+  document.getElementById('xast-sub').textContent = a.xastSub;
+  const atl = document.getElementById('ast-type-list');
+  atl.innerHTML = a.astTypes.map(t=>miniBar(t.label,t.pct,100,t.color,'%')).join('');
+  animBars(atl);
+  document.getElementById('pot-ast').textContent = a.potAst;
+  document.getElementById('pot-conv').textContent = a.potConv;
+  // drives panel
+  document.getElementById('drives-val').textContent = a.drives;
+  document.getElementById('drive-fg').textContent = a.driveFg;
+  document.getElementById('drive-pass').textContent = a.drivePass;
+  document.getElementById('drive-foul').textContent = a.driveFoul;
+  document.getElementById('drive-drib').textContent = a.driveDrib;
+  document.getElementById('drive-top').textContent = a.driveTop;
+}
+
+/* ══════════════════════════════════════════
+   PAGE: DEFESA
+══════════════════════════════════════════ */
+function renderDefensePage() {
+  const p = currentPlayer, a = p.adv;
+  document.getElementById('def-player-name').textContent = p.name.toUpperCase();
+
+  // heatmap zones
+  const hmg = document.getElementById('def-heat-zones');
+  if(hmg){
+    hmg.innerHTML='';
+    const gradColors=['#4A90D9','#E05252','#3ECF8E'];
+    a.defZones.forEach((z,i)=>{
+      const gradId=`dhg_${p.id}_${i}`;
+      const svgNS='http://www.w3.org/2000/svg';
+      const grad=document.createElementNS(svgNS,'radialGradient');
+      grad.setAttribute('id',gradId); grad.setAttribute('cx','50%'); grad.setAttribute('cy','50%'); grad.setAttribute('r','50%');
+      const s0=document.createElementNS(svgNS,'stop'); s0.setAttribute('offset','0%'); s0.setAttribute('stop-color',gradColors[z.type]); s0.setAttribute('stop-opacity',String(z.intensity));
+      const s1=document.createElementNS(svgNS,'stop'); s1.setAttribute('offset','100%'); s1.setAttribute('stop-color',gradColors[z.type]); s1.setAttribute('stop-opacity','0');
+      grad.appendChild(s0); grad.appendChild(s1);
+      const defsEl=document.getElementById('def-heatmap-svg').querySelector('defs')||document.createElementNS(svgNS,'defs');
+      defsEl.appendChild(grad);
+      document.getElementById('def-heatmap-svg').prepend(defsEl);
+      const circle=document.createElementNS(svgNS,'circle');
+      circle.setAttribute('cx',z.cx); circle.setAttribute('cy',z.cy); circle.setAttribute('r',z.r); circle.setAttribute('fill',`url(#${gradId})`);
+      hmg.appendChild(circle);
+    });
+  }
+
+  // DAI
+  document.getElementById('dai-val').textContent  = a.dai;
+  document.getElementById('dai-sub').textContent  = a.daiSub||'—';
+  const daiList = document.getElementById('dai-list');
+  if(daiList){
+    daiList.innerHTML = [
+      miniBar('Deflections',a.deflections,3,'#4A90D9',''),
+      miniBar('Steals',a.steals,3,'#4A90D9',''),
+      miniBar('Contests',a.defContests,6,'#4A90D9',''),
+      miniBar('Charges',a.chargesDrawn,1,'#4A90D9',''),
+    ].join('');
+    animBars(daiList);
+  }
+  document.getElementById('def-fg-against').textContent = a.defFgAgainst;
+  document.getElementById('def-contests').textContent   = a.defContests;
+  document.getElementById('def-deflections').textContent= a.deflections;
+  document.getElementById('def-steals').textContent     = a.steals;
+}
+
+/* ══════════════════════════════════════════
+   PAGE: MÉTRICAS AVANÇADAS (OCS / PIR / Gravity)
+══════════════════════════════════════════ */
+function renderAdvancedPage() {
+  const p = currentPlayer, a = p.adv;
+  document.getElementById('adv-player-name').textContent = p.name.toUpperCase();
+
+  // gravity SVG
+  document.getElementById('grav-dot').setAttribute('fill', p.color);
+  document.getElementById('grav-label').textContent = p.initials;
+  const gravDefs = document.querySelector('#grav-map-svg defs');
+  if(gravDefs){
+    const gg = document.getElementById('gravGrad');
+    if(gg){
+      gg.querySelector('stop').setAttribute('stop-color', p.color);
+    }
+  }
+  // adjust aura size based on gravity index
+  const auraR = 55 + (a.gravIdx/100)*55;
+  const aura = document.getElementById('grav-aura');
+  if(aura){ aura.setAttribute('r',String(auraR)); }
+  const gr1=document.getElementById('grav-ring1'); if(gr1) gr1.setAttribute('r',String(auraR));
+  const gr2=document.getElementById('grav-ring2'); if(gr2) gr2.setAttribute('r',String(auraR*.62));
+
+  // defender dots
+  const gd = document.getElementById('grav-defenders');
+  if(gd){
+    gd.innerHTML='';
+    (a.gravDefenders||[]).forEach(d=>{
+      gd.innerHTML+=`<circle cx="${d.cx}" cy="${d.cy}" r="7" fill="#E05252" opacity="0.8"/>
+        <text x="${d.cx}" y="${d.cy+4}" text-anchor="middle" fill="white" font-size="7" font-family="'JetBrains Mono',monospace">${d.dist}</text>`;
+    });
+  }
+
+  // OCS
+  document.getElementById('ocs-val').textContent       = a.ocs;
+  document.getElementById('pts-created').textContent   = a.ptsCreated;
+  document.getElementById('pts-own').textContent       = a.ptsOwn;
+  document.getElementById('pts-ast').textContent       = a.ptsAst;
+  document.getElementById('grav-idx').textContent      = a.gravIdx;
+  document.getElementById('grav-double').textContent   = a.gravDouble;
+  // PIR
+  document.getElementById('pir-val').textContent       = a.pir;
+  document.getElementById('tov-press').textContent     = a.tovPress;
+  document.getElementById('tov-drive').textContent     = a.tovDrive;
+  document.getElementById('tov-pnr').textContent       = a.tovPnr;
+  document.getElementById('tov-rate').textContent      = a.tovRate;
+}
+
+/* ══════════════════════════════════════════
+   PAGE: ON/OFF COURT
+══════════════════════════════════════════ */
+function renderOnOffPage() {
+  const p = currentPlayer, a = p.adv;
+  document.getElementById('onoff-player-name').textContent = p.name.toUpperCase();
+
+  // hero numbers
+  const netOnEl = document.getElementById('net-on');
+  const netOffEl = document.getElementById('net-off');
+  netOnEl.textContent = a.netOn;
+  netOffEl.textContent = a.netOff;
+  netOnEl.style.color = a.netOnNum>=0?'var(--green)':'var(--red)';
+  netOffEl.style.color = a.netOffNum<0?'var(--red)':'var(--green)';
+
+  // on/off bar chart
+  const bars = document.getElementById('onoff-bars');
+  bars.innerHTML='';
+  const halfW=280;
+  a.onOffMetrics.forEach(m=>{
+    const onPct  = Math.round((m.on/m.max)*halfW);
+    const offPct = Math.round((m.off/m.max)*halfW);
+    bars.innerHTML+=`
+    <div class="onoff-bar-row">
+      <div class="onoff-bar-label">${m.label}</div>
+      <div class="onoff-bar-wrap">
+        <div class="onoff-bar-center"></div>
+        <div class="onoff-bar-on"  style="width:0" data-w="${onPct}px"></div>
+        <div class="onoff-bar-off" style="width:0" data-w="${offPct}px"></div>
+      </div>
+      <div class="onoff-bar-vals">
+        <span class="onoff-on-val">${m.on}</span>
+        <span style="color:var(--muted)">·</span>
+        <span class="onoff-off-val">${m.off}</span>
+      </div>
+    </div>`;
+  });
+  setTimeout(()=>{
+    bars.querySelectorAll('[data-w]').forEach(el=>{ el.style.width=el.dataset.w; });
+  },80);
+
+  // lineup synergy
+  const ll = document.getElementById('lineup-list');
+  ll.innerHTML='';
+  (a.lineups||[]).forEach(l=>{
+    const dots=l.players.slice(0,3).map(n=>`<div class="lineup-dot" style="background:${l.color}22;color:${l.color};border-color:var(--bg)">${n.substring(0,2)}</div>`).join('');
+    const rColor=parseFloat(l.rating)>0?'var(--green)':'var(--red)';
+    ll.innerHTML+=`<div class="lineup-row">
+      <div class="lineup-dots" style="display:flex">${dots}</div>
+      <div class="lineup-info">
+        <div class="lineup-names">${l.players.join(' · ')}</div>
+        <div class="lineup-sub">${l.mins} min juntos</div>
+      </div>
+      <div class="lineup-rating" style="color:${rColor}">${l.rating}</div>
+    </div>`;
+  });
+
+  // side panel
+  document.getElementById('ddi-val').textContent  = a.ddi||a.dai;
+  document.getElementById('oo-usage').textContent = a.usage;
+  document.getElementById('oo-off').textContent   = a.offRtg;
+  document.getElementById('oo-def').textContent   = a.defRtg;
+  document.getElementById('oo-pace').textContent  = a.pace;
+}
+
+/* Three.js removido — quadra 2D via SVG */
+
+/* ══════════════════════════════════════════
+   LOADING SCREEN
+══════════════════════════════════════════ */
+function fakeLoad(){
+  const bar=document.getElementById('load-bar'),text=document.getElementById('load-text');
+  const msgs=['construindo quadra 3d...','carregando jogadores...','preparando arremessos...','pronto!'];
+  const steps=[25,55,85,100];
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i>=steps.length){ clearInterval(iv); return; }
+    bar.style.width=steps[i]+'%';
+    text.textContent=msgs[i];
+    i++;
+    if(i>=steps.length){
+      clearInterval(iv);
+      setTimeout(()=>{
+        const l=document.getElementById('loading');
+        if(l){ l.style.transition='opacity .5s'; l.style.opacity='0'; setTimeout(()=>{ if(l.parentNode) l.parentNode.removeChild(l); },520); }
+      },400);
+    }
+  },480);
+}
+fakeLoad();
+</script>
+</body>
+</html>
+
